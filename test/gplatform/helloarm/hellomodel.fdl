@@ -5,12 +5,12 @@
 ipblock myarm1 {
   iptype "armsystem";
 //  ipparm "fpe_name=/usr/local/gezel/share/nwfpe.bin";
-  ipparm "exec=hello Jefke Piet and Pol";
+  ipparm "exec=hello.bin Jefke Piet and Pol";
 }
 
 ipblock myarm2 {
   iptype "armsystem";
-  ipparm "exec=hello Jefke Piet and Pol";
+  ipparm "exec=hello.bin Jan Piet Joris and Korneel";
 }
 
 system S {

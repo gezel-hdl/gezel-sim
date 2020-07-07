@@ -1,16 +1,18 @@
+fdllex.cc: fdllex.ll
+	$(LEX) $(LFLAGS) $(AM_LFLAGS) -Pfdl -o"$@" "$<"
 
-fdlyacc.cc fdlyacc.h: fdl.y
-	bison -d -pfdl -ofdlyacc.cc fdl.y
-	@mv fdlyacc.cc.h fdlyacc.h 2>/dev/null || mv fdlyacc.hh fdlyacc.h
+fdlyacc.cc fdlyacc.h: fdlyacc.yy
+	$(YACC) -d -pfdl -ofdlyacc.cc fdlyacc.yy
+	@mv fdlyacc.cc.h fdlyacc.h 2>/dev/null || mv fdlyacc.hh fdlyacc.h || true
 
-BUILT_SOURCES = fdlyacc.cc fdl.cc fdlyacc.h
-
-AM_LFLAGS=-Pfdl -olex.yy.c
+BUILT_SOURCES = fdlyacc.h
+CLEANFILES = fdllex.cc fdlyacc.cc fdlyacc.h
 
 lib_LTLIBRARIES = libfdl.la
 
-CORELIB = fdl.ll        \
-	  fdlyacc.cc    \
+libfdl_la_SOURCES =     \
+          fdllex.ll     \
+          fdlyacc.yy    \
           artsignal.cxx \
           asymbol.cxx   \
           fdlcode.cxx   \
@@ -32,7 +34,7 @@ CORELIB = fdl.ll        \
           rttrace.cxx   \
           rtunop.cxx
 
-libfdl_la_SOURCES = $(CORELIB)
+libfdl_la_LIBADD = -lgmp -lstdc++
 
 pkginclude_HEADERS =    \
           artsignal.h   \
@@ -58,5 +60,6 @@ pkginclude_HEADERS =    \
           rttrace.h     \
           rtunop.h
 
-
-
+.PHONY: dist-hook
+dist-hook:
+	cd "$(distdir)" && rm $(CLEANFILES)

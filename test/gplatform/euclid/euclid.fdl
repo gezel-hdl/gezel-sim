@@ -91,7 +91,7 @@ fsm ctl_encap_euclid(encap_euclid) {
 
 ipblock myarm {
   iptype "armsystem";
-  ipparm "exec=euclid";
+  ipparm "exec=euclid.bin";
 }
 
 // instruction input

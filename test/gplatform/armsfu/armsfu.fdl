@@ -1,14 +1,14 @@
 
 ipblock myarm {
   iptype "armsystem";
-  ipparm "exec=sfudriver";
+  ipparm "exec=sfudriver.bin";
 }
 
 
 ipblock armsfu1(out d1, d2 : ns(32);
                 in  q1, q2 : ns(32)) {
   iptype "armsfu2x2";
-  ipparm "core = myarm";
+  ipparm "core=myarm";
   ipparm "device = 0";
 }
 

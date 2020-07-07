@@ -1,6 +1,6 @@
 ipblock arm1 {
   iptype "armsystem";
-  ipparm "exec = cordic_ref";
+  ipparm "exec=cordic_ref.bin";
 }
 
 

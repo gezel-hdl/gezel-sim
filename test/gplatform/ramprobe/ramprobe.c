@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <string.h>
 
 void probe(char *cmd) {
   char cmdbuffer[255];

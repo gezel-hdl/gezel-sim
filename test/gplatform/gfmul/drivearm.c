@@ -2,6 +2,7 @@
 // University of California at Los Angeles
 // $Id: drivearm.c,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
 
+#include <stdio.h>
 
 volatile int * P0 = (int *) 0x80000000;
 volatile int * P1 = (int *) 0x80000004;

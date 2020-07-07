@@ -369,7 +369,7 @@ fsm faes_decoder(aes_decoder) {
 
 ipblock myarm {
   iptype "armsystem";
-  ipparm "exec=aes_coproc_armdriver";
+  ipparm "exec=aes_coproc_armdriver.bin";
 }
 
 // instruction input

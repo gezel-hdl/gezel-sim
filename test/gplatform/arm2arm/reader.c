@@ -2,6 +2,8 @@
 // University of California at Los Angeles
 // $Id: reader.c,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
 
+#include <stdio.h>
+
 int main() {
 
   volatile int *wr = (int *) 0x80000000;

@@ -1,12 +1,12 @@
 ipblock myarm1 {
   iptype "armsystem";
-  ipparm "exec=sender";
+  ipparm "exec=sender.bin";
   ipparm "period = 2";  // make writer run 2 times slower than system clock
 }
 
 ipblock myarm2 {
   iptype "armsystem";
-  ipparm "exec=receiver";
+  ipparm "exec=receiver.bin";
 }
 
 ipblock channelsrc(out data : ns(32)) {

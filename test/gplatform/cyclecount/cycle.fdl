@@ -8,7 +8,7 @@
 
 ipblock myarm {
   iptype "armsystem";
-  ipparm "exec=cycle";
+  ipparm "exec=cycle.bin";
 }
 
 // instruction input

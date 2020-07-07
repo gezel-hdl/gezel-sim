@@ -1,6 +1,6 @@
 ipblock arm1 {
   iptype "armsystem";
-  ipparm "exec = cordic_fixp";
+  ipparm "exec=cordic_fixp.bin";
 }
 
 ipblock fsl(in  FSL_S_Clk     : ns(1);   // notused

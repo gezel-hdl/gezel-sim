@@ -1,6 +1,3 @@
-JAVAC=/opt/IBMJava2-142/bin/javac
-JAVAH=/opt/IBMJava2-142/bin/javah
-
 GezelModule.h GezelModule.class: GezelModule.java
 	$(JAVAC) GezelModule.java
 	$(JAVAH) GezelModule
@@ -13,7 +10,7 @@ GezelOutport.h GezelOutport.class: GezelOutport.java
 	$(JAVAC) GezelOutport.java
 	$(JAVAH) GezelOutport
 
-clean:
+clean-local:
 	rm -f GezelModule.h GezelInport.h GezelOutport.h *.class
 
 GezelModuleImp.cxx: GezelModule.h
@@ -24,10 +21,27 @@ GezelOutportImp.cxx: GezelOutport.h
 
 lib_LTLIBRARIES = libgzljava.la
 
-libgzljava_la_SOURCES = GezelModule.h GezelInport.h GezelOutport.h GezelModuleImp.cxx GezelInportImp.cxx GezelOutportImp.cxx java_itf.h
+BUILT_SOURCES =         \
+    GezelModule.h       \
+    GezelInport.h       \
+    GezelOutport.h
 
-libgzljava_la_LIBADD = -lgmp -L$(top_srcdir)/ipblock -lipconfig -L$(top_srcdir)/gezel -lfdl -lstdc++
+libgzljava_la_SOURCES = \
+    GezelModuleImp.cxx  \
+    GezelInportImp.cxx  \
+    GezelOutportImp.cxx \
+    java_itf.h
 
-INCLUDES = -I$(top_srcdir)/gezel -I$(top_srcdir)/ipblock 
+libgzljava_la_LIBADD = ../ipblock/libipconfig.la ../gezel/libfdl.la
 
-data_DATA = GezelModule.class GezelInport.class GezelOutport.class
+AM_CPPFLAGS = -I$(top_srcdir)/gezel -I$(top_srcdir)/ipblock
+
+data_DATA =             \
+    GezelModule.class   \
+    GezelInport.class   \
+    GezelOutport.class
+
+EXTRA_DIST = \
+	GezelInport.java \
+	GezelModule.java \
+	GezelOutport.java

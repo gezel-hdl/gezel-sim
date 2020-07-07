@@ -4,7 +4,7 @@
 void main() {
   int i;
 
-  volatile xdata unsigned char *shared = (volatile xdata unsigned char *) 0x4000;
+  volatile __xdata __at (0x4000) unsigned char shared[0x40];
 
   for (i=0; i<64; i++) {
     shared[i] = 64 - i;

@@ -1,6 +1,6 @@
 ipblock arm1 {
   iptype "armsystem";
-  ipparm "exec = fsldrive";
+  ipparm "exec=fsldrive.bin";
 }
 
 ipblock fsl1(out data   : ns(32);

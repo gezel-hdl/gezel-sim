@@ -19,4 +19,3 @@ app.od: simple.c
 
 clean:
 	rm -f *.class javacore.* *~ *.od *.out
-

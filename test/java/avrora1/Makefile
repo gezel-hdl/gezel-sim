@@ -1,8 +1,12 @@
 # $Id: Makefile,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
 
 include ../../Makefile.cfg
+
 GEZELCLS=../../../build/share
 GEZELLIB=../../../build/lib
+
+TARGET = srec
+TARGETS = $(TARGET).srec
 
 #-- platform
 

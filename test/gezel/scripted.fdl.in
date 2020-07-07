@@ -1,0 +1,32 @@
+#!@top_builddir@/standalone/fdlsim@EXEEXT@
+
+// $Id: scripted.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+//
+// This file can be executed in three different ways, and illustrates
+// how fdlsim can read from standard input.
+//
+// 1. Directly execute this file from the command line:
+//    10 cycles can be executed as
+//
+//       > ./scripted.fdl 10
+//
+// 2. Pipe this file into fdlsim:
+//    10 cycles can be executed as
+//
+//       > cat scripted.fdl | ../../build/bin/fdlsim 10
+//
+// 3. Provide this file as an argument for fdlsim
+//    10 cycles can be executed as
+//
+//       > ../../build/bin/fdlsim scripted.fdl 10
+//
+
+dp mydp {
+  always {
+   $display("Cycle ", $cycle);
+  }
+}
+
+system S {
+  mydp;
+}
