@@ -1,0 +1,196 @@
+// IP checksum inserter
+// Fully pipelined implementation
+//
+// data is expected to be available each clock cycle at data_in
+// the last byte of a packet is indicated through 'complete'
+//
+// data_out contains the processed data stream
+// rdy_out is '1' when data_out is valid
+//
+// Copyright 2003 Patrick Schaumont (schaum@ee.ucla.edu)
+// $Id: ipchecksum.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+dp checksum(in  data_in  : ns(8);
+            in  complete : ns(1);
+            out data_out : ns(8);
+            out rdy_out  : ns(1)) {
+
+  reg count       : ns(8);
+  reg ipfound     : ns(1);
+  reg single      : ns(8);
+  reg rdy_out_flg : ns(1);
+  reg chk         : ns(16);
+  reg skipchk     : ns(1);
+  reg packetfull  : ns(1);
+
+  reg s00, s01, s02, s03, s04, s05, s06, s07, s08, s09 : ns(8);
+  reg s10, s11, s12, s13, s14, s15, s16, s17, s18, s19 : ns(8);
+
+  reg f00, f01, f02, f03, f04, f05, f06, f07, f08, f09 : ns(1);
+  reg f10, f11, f12, f13, f14, f15, f16, f17, f18, f19 : ns(1);
+
+  sfg rst {
+    count = 0;
+    ipfound = 0;
+    data_out = 0x0;
+    rdy_out  = 0x0;
+    chk = 0x0;
+  }
+
+  sfg shift {
+    // reg 10 and 11 can be directly written by checksum
+    // shift reg for data
+    s00 = data_in;
+    s01 = s00; s02 = s01; s03 = s02; s04 = s03;
+    s05 = s04; s06 = s05; s07 = s06; s08 = s07;
+    s09 = s08;                       s12 = s11;
+    s13 = s12; s14 = s13; s15 = s14; s16 = s15;
+    s17 = s16; s18 = s17; s19 = s18;
+    data_out = s19;
+
+    // shift reg for data valid flag
+    f01 = f00; f02 = f01; f03 = f02; f04 = f03;
+    f05 = f04; f06 = f05; f07 = f06; f08 = f07;
+    f09 = f08; f10 = f09; f11 = f10; f12 = f11;
+    f13 = f12; f14 = f13; f15 = f14; f16 = f15;
+    f17 = f16; f18 = f17; f19 = f18;
+    rdy_out = f19; 
+  }
+
+  sfg checksumcalc_lo { // checksum evaluation odd bytes
+     sig tmp : ns(16);
+     tmp = (s00);
+     chk = (((chk + tmp) & 0xffff) < chk) ? 
+             (((chk + tmp + 1) & 0xffff) ) : (chk + tmp);
+  }
+
+  sfg checksumcalc_hi { // checksum evaluation even bytes
+     sig tmp : ns(16); 
+     tmp = (s00) << 8;
+     chk = (((chk + tmp) & 0xffff) < chk) ? (((chk + tmp + 1) & 0xffff) ) : 
+                                            (chk + tmp);
+  }
+
+  sfg advance_count { // flag generation
+    count      = complete ? 0 : count + 1;
+    ipfound    = ((count == 14) & (data_in == 0x45)) ? 1 : 0;
+    skipchk    = (count == 23);
+    packetfull = (count == 33); 
+  }
+
+  sfg shiftchk { // default behavior for checksum registers
+    s10 = s09;
+    s11 = s10;
+  }
+
+  sfg eval_chksum { // insert checksum
+    s11 = (~chk >> 8) & 0xff;
+    s10 = (~chk) & 0xff;
+    chk = 0;
+    $display($cycle, " Checksum is ", $hex, s11, " ", s10);
+  }
+
+}
+
+fsm ctl_checksum(checksum) {
+  initial s0;
+  state scan, eval, evalb, skip1, skip2, complete;
+
+  @s0       (rst) -> scan;
+  @scan     if (ipfound) then (checksumcalc_hi, 
+                               advance_count,
+                               shiftchk, shift)  -> evalb;
+                     else     (advance_count,
+                               shiftchk, shift)  -> scan;
+  @eval     (advance_count, checksumcalc_hi,
+            shiftchk, shift)                     -> evalb;
+  @evalb    if (skipchk) then (advance_count, 
+                               checksumcalc_lo,
+                               shiftchk, shift)  -> skip1;
+            else if (packetfull) then 
+                              (advance_count, 
+                               checksumcalc_lo,
+                               shiftchk, shift)  -> complete;
+            else (advance_count, checksumcalc_lo, 
+                  shift, shiftchk)               -> eval;
+  @skip1    (advance_count, shift, shiftchk)     -> skip2;
+  @skip2    (advance_count, shift, shiftchk)     -> eval;
+  @complete (eval_chksum, advance_count, shift)  -> scan;
+}
+
+
+//------------------------------------------------------------
+
+// sample testbench
+
+dp tb(out data_in  : ns(8);
+      out complete : ns(1)) {
+
+   lookup data_in_ul : ns(8) = {
+   // a ping packet	
+   0x00, 0x10, 0x67, 0x00, 0xB9, 0x76, 0x00, 0x00, 
+   0x39, 0x16, 0x20, 0x9D, 0x08, 0x00, 0x45, 0x00, 
+   0x00, 0x3C, 0x9A, 0x7D, 0x00, 0x00, 0x20, 0x01,
+   0xBA, 0xEA, 0x04, 0x29, 0x68, 0x11, 0x80, 0x61, 
+   0x58, 0xBE, 0x08, 0x00, 0x49, 0x5C, 0x03, 0x00,
+   0x01, 0x00, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 
+   0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 
+   0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,
+   0x77, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67,
+   0x68, 0x69,
+   // a HTTP GET
+   0x00, 0xBD, 0x3B, 0x33, 0x05, 0x71, 0xAA, 0xBB,
+   0xCC, 0xAA, 0xBB, 0xCC, 0x08, 0x00, 0x45, 0x00,
+   0x00, 0x67, 0xE3, 0x81, 0x40, 0x00, 0x40, 0x06,
+   0xFD, 0x8D, 0x80, 0x61, 0x00, 0x01, 0x80, 0x61,
+   0x58, 0xBE, 0x80, 0x00, 0x00, 0x50, 0x00, 0x11,
+   0x22, 0x34, 0x00, 0x00, 0x00, 0x01, 0x50, 0x10,
+   0x16, 0x00, 0xCF, 0xFA, 0x00, 0x00, 0x47, 0x45,
+   0x54, 0x20, 0x2F, 0x20, 0x48, 0x54, 0x54, 0x50,
+   0x2F, 0x31, 0x2E, 0x30, 0x0D, 0x0A, 0x43, 0x6F,
+   0x6E, 0x6E, 0x65, 0x63, 0x74, 0x69, 0x6F, 0x6E,
+   0x3A, 0x20, 0x4B, 0x65, 0x65, 0x70, 0x2D, 0x41,
+   0x6C, 0x69, 0x76, 0x65, 0x0D, 0x0A, 0x55, 0x73,
+   0x65, 0x72, 0x2D, 0x41, 0x67, 0x65, 0x6E, 0x74,
+   0x3A, 0x20, 0x4D, 0x6F, 0x7A, 0x69, 0x6C, 0x6C,
+   0x61, 0x2F, 0x34, 0x2E, 0x37
+   };
+
+   reg packet_count : ns(8);
+
+   sfg rst {
+     data_in  = 0x0;
+     complete = 0x1;
+   }
+
+   sfg cnt {
+     packet_count  = (packet_count == 190) ? 0 : packet_count + 1;
+     complete      = (packet_count == 73)  ? 1 : 
+                     (packet_count == 190) ? 1 : 0;
+     data_in       = data_in_ul(packet_count);
+   }
+
+}
+
+fsm tb_fsm(tb) {
+  initial s0;
+  state s1, s2;
+
+  @s0 (rst) -> s1;
+  @s1 (rst) -> s2;
+  @s2 (cnt) -> s2;
+}
+
+dp ipchecksum_sys {
+  sig data_in  : ns(8);
+  sig complete : ns(1);
+  sig data_out : ns(8);
+  sig rdy_out  : ns(1);
+  use tb(data_in, complete);
+  use checksum(data_in, complete, data_out, rdy_out);
+}
+
+system S {
+  ipchecksum_sys;
+}
+

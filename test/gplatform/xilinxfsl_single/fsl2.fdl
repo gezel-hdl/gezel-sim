@@ -1,0 +1,129 @@
+ipblock arm1 {
+  iptype "armsystem";
+  ipparm "exec = fsldrive";
+}
+
+ipblock fsl(in  FSL_S_Clk     : ns(1);   // notused
+            in  FSL_S_Read    : ns(1);   // hshk for slave side
+            out FSL_S_Data    : ns(32);  // data for slave side
+            out FSL_S_Control : ns(1);   // control for slave side
+            out FSL_S_Exists  : ns(1);   // hshk for slave side
+            in  FSL_M_Clk     : ns(1);   // notused
+            in  FSL_M_Write   : ns(1);   // hshk for master side
+	    in  FSL_M_Data    : ns(32);  // data for master side
+	    in  FSL_M_Control : ns(1);   // control for master side
+	    out FSL_M_Full    : ns(1)) { // hshk for master side
+   iptype "xilinx_fsl";
+   ipparm "core=arm1";                // strongarm core
+   ipparm "slavewrite  = 0x80000000"; // address used to write slave data
+   ipparm "masterread  = 0x80000004"; // address used to read master data
+   ipparm "masterstatus= 0x80000008"; // address used to poll master status
+}
+
+dp gezelfslcopy(  in  rdata   : ns(32);
+                  in  exists  : ns(1);
+                  out read    : ns(1);
+                  out wdata   : ns(32);
+                  in  full    : ns(1);
+                  out write   : ns(1)) {
+  reg rexists, rfull : ns(1);
+  reg rcopy : ns(32);
+  reg cnt   : ns(8);
+  always {
+    rexists  = exists;
+    rfull    = full;
+    wdata    = rcopy;
+  }
+  sfg dowrite   { write = 1; }
+  sfg dontwrite { write = 0; }
+  sfg doread    { read  = 1; }
+  sfg dontread  { read  = 0; }
+  sfg capture   { rcopy = rdata + 25; 
+                  $display("captures data: ", $dec, rdata);
+                }
+}
+fsm fsm_gezelfslcopy(gezelfslcopy) {
+  initial s0;
+  state s0w, s1;
+  @s0  if (rexists) then (capture , doread, dontwrite) -> s1;
+                    else (dontread, dontwrite) -> s0;
+  @s1  if (rfull)   then (dontread, dontwrite) -> s1;
+                    else (dontread, dowrite)   -> s0;
+}
+
+dp fsladd25(out FSL_S_Clk     : ns(1);   // notused
+            out FSL_S_Read    : ns(1);   // hshk for slave side
+            in  FSL_S_Data    : ns(32);  // data for slave side
+            in  FSL_S_Control : ns(1);   // control for slave side
+            in  FSL_S_Exists  : ns(1);   // hshk for slave side
+            out FSL_M_Clk     : ns(1);   // notused
+            out FSL_M_Write   : ns(1);   // hshk for master side
+  	    out FSL_M_Data    : ns(32);  // data for master side
+   	    out FSL_M_Control : ns(1);   // control for master side
+	    in  FSL_M_Full    : ns(1)) { // hshk for master side
+
+  sig rdata, wdata       : ns(32);
+  sig write, read        : ns(1);
+  sig exists, full       : ns(1);
+
+  use gezelfslcopy(rdata, exists, read, 
+                   wdata, full, write);
+
+  always {
+    rdata         = FSL_S_Data;
+    exists        = FSL_S_Exists;
+    FSL_S_Read    = read;
+
+    FSL_M_Data    = wdata;
+    FSL_M_Control = 0;
+    FSL_M_Write   = write;
+    full          = FSL_M_Full;
+
+    FSL_S_Clk     = 0;
+    FSL_M_Clk     = 0;
+  }
+}
+
+dp top {
+  sig FSL_Clk       : ns( 1); 
+  sig FSL_Rst       : ns( 1); 
+  sig FSL_S_Clk     : ns( 1); 
+  sig FSL_S_Read    : ns( 1); 
+  sig FSL_S_Data    : ns(32);
+  sig FSL_S_Control : ns( 1); 
+  sig FSL_S_Exists  : ns( 1); 
+  sig FSL_M_Clk     : ns( 1); 
+  sig FSL_M_Write   : ns( 1); 
+  sig FSL_M_Data    : ns(32);
+  sig FSL_M_Control : ns( 1); 
+  sig FSL_M_Full    : ns( 1); 
+
+  use arm1;
+
+  use fsladd25(FSL_S_Clk     ,
+               FSL_S_Read    ,
+               FSL_S_Data    ,
+               FSL_S_Control ,
+               FSL_S_Exists  ,
+               FSL_M_Clk     ,
+               FSL_M_Write   ,
+     	       FSL_M_Data    ,
+  	       FSL_M_Control ,
+	       FSL_M_Full    );
+
+  use fsl(FSL_S_Clk     ,
+          FSL_S_Read    ,
+          FSL_S_Data    ,
+          FSL_S_Control ,
+          FSL_S_Exists  ,
+          FSL_M_Clk     ,
+          FSL_M_Write   ,
+     	  FSL_M_Data    ,
+  	  FSL_M_Control ,
+	  FSL_M_Full    );
+
+}
+
+system S {
+  top;
+}

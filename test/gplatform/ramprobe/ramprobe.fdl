@@ -1,0 +1,68 @@
+
+ // RAM cell
+ipblock M(in address : ns(5);
+     in wr,rd   : ns(1);  
+     in idata   : ns(36);
+     out odata  : ns(36)) {
+  iptype "ram";
+  ipparm "wl=8";  
+  ipparm "size=36";  
+}
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=ramprobe";
+}
+
+ipblock b1 {
+  iptype "armsystemprobe";
+  ipparm "core=myarm";
+  ipparm "probe=0x80000000";
+  ipparm "block=M";
+}
+ 
+dp tmac(out address : ns(5);
+   out wr, rd  : ns(1);
+   out idata   : ns(36);
+   in odata    : ns(36)) {
+  reg ar : ns(5);
+  reg idr, odr : ns(36);
+
+  sfg write  { wr = 1; rd = 0; idata = idr; odr = odata; address = ar;  
+     $display($cycle, ":ar ", ar, " idata ", idata);    
+   }
+  sfg read   { wr = 0; rd = 1; address = ar; odr = odata; idata = idr;  
+     $display($cycle, ":ar ", ar, " odata ", odata);
+   }
+  sfg incadr { ar = ar + 1; idr = idr + 1;}
+  sfg clraddr { ar = 0; }
+  sfg wait   { address = 0; wr = 0; rd = 0; idata = 0; }
+}
+ 
+fsm ftmac(tmac) {
+  state   s1, s2;
+  initial s0;
+ 
+  @s0 if (ar == 8) then (write, clraddr ) -> s1;
+  else   (write, incadr)  -> s0;
+  @s1 if (ar == 8) then (read,  clraddr)  -> s2;
+  else   (read,  incadr)   -> s1;
+  @s2    (wait) -> s2;
+
+}
+
+dp sys {
+  sig address : ns(5);
+  sig wr, rd  : ns(1);
+  sig idata   : ns(36);
+  sig odata   : ns(36);
+
+  use myarm;
+  use b1;
+  use M(address, wr, rd, idata, odata);
+  use tmac(address, wr, rd, idata, odata);
+}
+
+system S {
+  sys;
+}  

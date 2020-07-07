@@ -1,0 +1,132 @@
+
+dp euclid(in  m_in, n_in : ns(32);
+          out gcd_out    : ns(32);
+          in  c_ld       : ns(1);
+          out c_done     : ns(1)) {
+
+  
+
+  reg m, n               : ns(32);
+  reg factor             : ns(32);
+  reg ld                 : ns(1);
+  reg done               : ns(1);
+
+  $trace(m, "m.txt");
+
+  sfg load    { ld = c_ld; m = m_in; n = n_in; }
+  sfg init    { factor = 0; done = 0;}
+  sfg flags   { done = ((m == 0) | (n == 0));  }
+  sfg shiftm  { m = m >> 1; }
+  sfg shiftn  { n = n >> 1; }
+  sfg reduce  { m = (m >= n) ? m - n : m;  
+                n = (n >  m) ? n - m : n; }
+  sfg shiftf  { factor = factor + 1; } 
+  sfg outidle { gcd_out = 0;
+                c_done  = 0;}
+  sfg complete{ gcd_out = ((m > n) ? m : n) << factor;
+                c_done  = 1; }
+}
+
+fsm euclid_ctl(euclid) {
+  initial s0;
+  state s1, s2;
+
+  @s0 if (ld) then (outidle) -> s1;
+       else (init, load, outidle) -> s0;
+  @s1  if (done)               then (complete)                 -> s2;
+       else if ( m[0] &  n[0]) then (reduce, outidle, flags)   -> s1;
+       else if ( m[0] & ~n[0]) then (shiftn, outidle, flags)   -> s1;
+       else if (~m[0] &  n[0]) then (shiftm, outidle, flags)   -> s1;
+                               else (shiftn, shiftm, 
+                                     shiftf, outidle, flags)   -> s1;
+  @s2  if (ld) then (load, complete) -> s2;
+       else (init, load, outidle) -> s0;
+}
+
+dp encap_euclid(in   ins : ns(8);
+                in   din : ns(32); 
+                out dout : ns(32)) {
+
+   reg ld, done  :  ns(1);
+   reg m, n, gcd : ns(32);
+   sig gcd_out   : ns(32);
+   reg insreg    : ns(32);
+   sig c_done    : ns(1);
+
+   use euclid(m, n, gcd_out, ld, c_done);
+
+   sfg decode  { insreg = ins;
+                 dout   = gcd; 
+                 done   = c_done; }
+   sfg load_m  { m  = din; 
+ 		 $display($cycle, ": load m ", m); 
+		}
+   sfg load_n  { n  = din; 
+		 $display($cycle, ": load n ", n); 
+		}
+   sfg dogcd   { ld = 1; gcd = 0; 
+		 $display($cycle, ": dogcd"); 
+		}
+   sfg donegcd { ld = 0; gcd = gcd_out; 
+		 $display($cycle, ": done. result=", gcd); 
+		}
+}
+
+fsm ctl_encap_euclid(encap_euclid) {
+  initial s0;
+  state s1, s2, s3;
+
+  @s0 (decode) -> s1;
+
+  @s1 if (insreg == 1)      then (load_m, decode) -> s2;
+      else if (insreg == 2) then (load_n, decode) -> s2;
+      else if (insreg == 3) then (dogcd, decode ) -> s3;
+                            else (decode) -> s1;
+
+  @s2 if (insreg == 0) then (decode) -> s1;
+                       else (decode) -> s2;
+
+  @s3 if (done) then (donegcd, decode) -> s2;
+                else (decode)          -> s3;
+
+}
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=euclid";
+}
+
+// instruction input
+ipblock b_ins(out data : ns(8)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm";
+  ipparm "address=0x80000000";
+}
+
+// data input
+ipblock b_datain(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm";
+  ipparm "address=0x80000008";
+}
+
+// data output
+ipblock b_dataout(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm";
+  ipparm "address=0x80000004";
+}
+
+dp sys {
+  sig ins, din, dout : ns(32);
+
+  use myarm;
+  use encap_euclid(ins, din, dout);
+  use b_ins(ins);
+  use b_datain(din);
+  use b_dataout(dout);
+}
+
+system S {
+  sys;
+}

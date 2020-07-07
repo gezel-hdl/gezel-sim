@@ -1,0 +1,39 @@
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=sfudriver";
+}
+
+
+ipblock armsfu1(out d1, d2 : ns(32);
+                in  q1, q2 : ns(32)) {
+  iptype "armsfu2x2";
+  ipparm "core = myarm";
+  ipparm "device = 0";
+}
+
+ipblock am(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm";
+  ipparm "address=0x80000000";
+}
+
+
+dp addsub {
+  use myarm;
+
+  sig d1, d2, d3, q1, q2 : ns(32);
+  use am(d3);
+  use armsfu1(d1, d2, q1, q2);
+
+  always {
+   d3 = 0;
+   q1 = (d1 + d2);
+   q2 = (d1 - d2);
+   $display("SFU 2x2 runs at ", $cycle, ": " , q1, " ", q2);
+  }
+}
+
+system S {
+  addsub;
+}

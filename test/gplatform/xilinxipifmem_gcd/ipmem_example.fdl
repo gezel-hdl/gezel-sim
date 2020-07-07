@@ -1,0 +1,271 @@
+ipblock arm {
+  iptype "armsystem";
+  ipparm "exec = ipmem_drive";
+}
+
+$option "generic user_logic C_DWIDTH integer 32"
+$option "generic user_logic C_NUM_CE integer 2"
+$option "generic user_logic C_RDFIFO_DWIDTH integer 32"
+$option "generic user_logic C_WRFIFO_DWIDTH integer 32"
+
+// interface for 2 write, 2 read chip-enable channels
+ipblock memipif(out Bus2IP_Data    : ns(32); // 0 to dwidth-1
+                out Bus2IP_BE      : ns(4);  // 0 to dwidth/8 - 1
+                out Bus2IP_Burst   : ns(1);
+                out Bus2IP_RdCE    : ns(2);  // 0 to c_num_ce - 1
+                out Bus2IP_WrCE    : ns(2);  // 0 to c_num_ce - 1
+                out Bus2IP_RdReq   : ns(1);
+                out Bus2IP_WrReq   : ns(1);
+                in  IP2Bus_Data    : ns(32);
+                in  IP2Bus_RdAck   : ns(1);
+                in  IP2Bus_WrAck   : ns(1);
+                in  IP2Bus_Retry   : ns(1);
+                in  IP2Bus_Error   : ns(1);
+                in  IP2Bus_ToutSup : ns(1)) {
+   iptype "xilinx_ipif_mem";
+   ipparm "core=arm";
+   ipparm "regid=0x80000000"; // index for regs
+   ipparm "opid =0x80000004"; // operation id
+   ipparm "data =0x8000000C"; // data r/w channel
+}
+
+ipblock rfifo_ipif (in   IP2RFIFO_WrReq      : ns(1);
+                    in   IP2RFIFO_Data       : ns(32);
+                    out  RFIFO2IP_WrAck      : ns(1);
+                    out  RFIFO2IP_AlmostFull : ns(1);
+                    out  RFIFO2IP_Full       : ns(1)) {
+   iptype "xilinx_ipif_rdfifo";
+   ipparm "core=arm";
+   ipparm "depth=512";            // number of  places in fifo
+   ipparm "read   = 0x80001000"; 
+   ipparm "status = 0x80001004"; // request fifo to gezel
+}
+
+
+ipblock wfifo_ipif (in   IP2WFIFO_RdReq       : ns(1);
+                    out  WFIFO2IP_Data        : ns(32);
+                    out  WFIFO2IP_RdAck       : ns(1);
+                    out  WFIFO2IP_AlmostEmpty : ns(1);
+                    out  WFIFO2IP_Empty       : ns(1)) {
+   iptype "xilinx_ipif_wrfifo";
+   ipparm "core=arm";
+   ipparm "depth=8";            // number of places in fifo
+   ipparm "write  = 0x80002000"; 
+   ipparm "status = 0x80002004"; // request fifo to gezel
+}
+
+// Euclid
+dp euclid(in  din        : tc(32);
+          out din_req    : ns( 1);
+          in  din_ack    : ns( 1);
+          out dout       : tc(32);
+          out dout_req   : ns( 1);
+          in  dout_ack   : ns( 1);
+          out spy_m      : tc(32);
+          out spy_n      : tc(32)) {
+
+  reg m, n               : tc(32);
+  reg done               : ns( 1);
+  reg factor             : ns( 5); 
+  reg gcd                : tc(32);
+  reg r_din_ack          : ns( 1);
+  reg r_dout_ack         : ns( 1);
+
+  always       { done  = ((m == 0) | (n == 0)); 
+                 gcd   = ((m > n) ? m : n) << factor; 
+                 spy_m = m;
+                 spy_n = n;
+               }
+  sfg init     { din_req   = 1;
+                 dout_req  = 0;
+                 dout      = 0;
+                 r_din_ack = din_ack;
+                 m         = din_ack ? din : m;
+                 n         = din_ack ? m   : n;
+                 factor    = 0;
+               }
+  sfg shiftm   { m = m >> 1; }
+  sfg shiftn   { n = n >> 1; }
+  sfg reduce   { m = (m >= n) ? m - n : m;  
+                 n = (n >  m) ? n - m : n; }
+  sfg shiftf   { factor = factor + 1; } 
+  sfg noreq    { din_req  = 0;
+                 dout_req = 0;
+                 dout     = 0;
+               }
+  sfg complete { dout_req   = 1;
+                 din_req    = 0;
+                 dout       = gcd;
+  //	         $display("m ", m," n ", n, " gcd ", gcd);
+                 r_dout_ack = dout_ack;
+               }
+}
+
+fsm euclid_ctl(euclid) {
+  initial s0;
+  state s1, s2, s3; 
+  @s0 if (r_din_ack) then (init) -> s1;
+                     else (init) -> s0;
+  @s1 if (r_din_ack) then (init) -> s2;
+                     else (init) -> s1;
+  @s2 if (done)               then (complete) -> s3;
+      else if ( m[0] &  n[0]) then (reduce, noreq)   -> s2;
+      else if ( m[0] & ~n[0]) then (shiftn, noreq)   -> s2;
+      else if (~m[0] &  n[0]) then (shiftm, noreq)   -> s2;
+                              else (shiftn, shiftm, 
+                                    shiftf, noreq)   -> s2;
+  @s3 if (r_dout_ack) then (init)     -> s0;
+                      else (complete) -> s3;
+} 
+
+dp user_logic (  in  Bus2IP_Data          : ns(32); 
+                 in  Bus2IP_BE            : ns( 4);  
+                 in  Bus2IP_Burst         : ns( 1);
+                 in  Bus2IP_RdCE          : ns( 2); 
+                 in  Bus2IP_WrCE          : ns( 2); 
+                 in  Bus2IP_RdReq         : ns( 1);
+                 in  Bus2IP_WrReq         : ns( 1);
+                 out IP2Bus_Data          : ns(32);
+                 out IP2Bus_RdAck         : ns( 1);
+                 out IP2Bus_WrAck         : ns( 1);
+                 out IP2Bus_Retry         : ns( 1);
+                 out IP2Bus_Error         : ns( 1);
+                 out IP2Bus_ToutSup       : ns( 1);
+
+  		 out IP2RFIFO_WrReq       : ns(1);
+                 out IP2RFIFO_Data        : ns(32);
+                 in  RFIFO2IP_WrAck       : ns(1);
+                 in  RFIFO2IP_AlmostFull  : ns(1);
+                 in  RFIFO2IP_Full        : ns(1);
+
+                 out IP2WFIFO_RdReq       : ns(1);
+                 in  WFIFO2IP_Data        : ns(32);
+                 in  WFIFO2IP_RdAck       : ns(1);
+                 in  WFIFO2IP_AlmostEmpty : ns(1);
+                 in  WFIFO2IP_Empty       : ns(1)) {
+
+  reg reg_ip2bus_data    : ns(32);
+  reg reg_ip2bus_rd_ack  : ns( 1);
+  reg reg_ip2bus_wr_ack  : ns( 1);
+
+  sig din, dout       : tc(32);
+  sig din_req, dout_req, din_ack, dout_ack : ns(1);
+  sig spy_m, spy_n    : tc(32);
+  use euclid(din,  din_req,  din_ack, dout, dout_req, dout_ack, spy_m, spy_n);
+
+  always {
+
+    reg_ip2bus_data    = Bus2IP_RdCE[0] ? spy_m :
+		         Bus2IP_RdCE[1] ? spy_n : 
+                         0;
+    IP2Bus_Data        = reg_ip2bus_data;
+
+    reg_ip2bus_rd_ack  = (Bus2IP_RdCE[0] | Bus2IP_RdCE[1]) & Bus2IP_RdReq;
+    reg_ip2bus_wr_ack  = (Bus2IP_WrCE[0] | Bus2IP_WrCE[1]) & Bus2IP_WrReq;
+    IP2Bus_RdAck       = reg_ip2bus_rd_ack;
+    IP2Bus_WrAck       = reg_ip2bus_wr_ack;
+
+//    reg_ip2bus_rd_ack  = Bus2IP_RdReq;
+//    reg_ip2bus_wr_ack  = Bus2IP_WrReq;
+//    IP2Bus_RdAck       = reg_ip2bus_rd_ack;
+//    IP2Bus_WrAck       = reg_ip2bus_wr_ack;
+    
+    IP2RFIFO_WrReq     = dout_req;
+    dout_ack           = RFIFO2IP_WrAck;
+    IP2RFIFO_Data      = dout;
+
+    IP2WFIFO_RdReq     = din_req;
+    din_ack            = WFIFO2IP_RdAck;
+    din                = WFIFO2IP_Data;
+
+    IP2Bus_Retry       = 0;
+    IP2Bus_Error       = 0;
+    IP2Bus_ToutSup     = 0;
+  }
+}
+
+dp top {
+
+   sig Bus2IP_Data          : ns(32); 
+   sig Bus2IP_BE            : ns(4);  
+   sig Bus2IP_Burst         : ns(1);  
+   sig Bus2IP_RdCE          : ns(2); 
+   sig Bus2IP_WrCE          : ns(2); 
+   sig Bus2IP_RdReq         : ns(1); 
+   sig Bus2IP_WrReq         : ns(1); 
+   sig IP2Bus_Data          : ns(32);
+   sig IP2Bus_RdAck         : ns(1);
+   sig IP2Bus_WrAck         : ns(1);
+   sig IP2Bus_Retry         : ns(1);
+   sig IP2Bus_Error         : ns(1);
+   sig IP2Bus_ToutSup       : ns(1);
+   sig IP2RFIFO_WrReq       : ns(1);
+   sig IP2RFIFO_Data        : ns(32);
+   sig RFIFO2IP_WrAck       : ns(1);
+   sig RFIFO2IP_AlmostFull  : ns(1);
+   sig RFIFO2IP_Full        : ns(1);
+   sig IP2WFIFO_RdReq       : ns(1);
+   sig WFIFO2IP_Data        : ns(32);
+   sig WFIFO2IP_RdAck       : ns(1);
+   sig WFIFO2IP_AlmostEmpty : ns(1);
+   sig WFIFO2IP_Empty       : ns(1);
+
+   use arm;
+
+   use memipif    (Bus2IP_Data    ,
+	           Bus2IP_BE      ,
+                   Bus2IP_Burst   ,
+	           Bus2IP_RdCE    ,
+	           Bus2IP_WrCE    ,
+	           Bus2IP_RdReq   ,
+	           Bus2IP_WrReq   ,
+	           IP2Bus_Data    ,
+	           IP2Bus_RdAck   ,
+	           IP2Bus_WrAck   ,
+	           IP2Bus_Retry   ,
+	           IP2Bus_Error   ,
+	           IP2Bus_ToutSup );
+
+   use rfifo_ipif (IP2RFIFO_WrReq      ,
+                   IP2RFIFO_Data       ,
+                   RFIFO2IP_WrAck      , 
+                   RFIFO2IP_AlmostFull ,
+                   RFIFO2IP_Full       );
+
+   use wfifo_ipif (IP2WFIFO_RdReq       ,
+                   WFIFO2IP_Data        ,
+                   WFIFO2IP_RdAck       ,
+                   WFIFO2IP_AlmostEmpty ,
+                   WFIFO2IP_Empty       );
+
+   use user_logic (Bus2IP_Data          ,
+	           Bus2IP_BE            ,
+                   Bus2IP_Burst         ,
+	           Bus2IP_RdCE          ,
+	           Bus2IP_WrCE          ,
+	           Bus2IP_RdReq         ,
+	           Bus2IP_WrReq         ,
+   	           IP2Bus_Data          ,
+	           IP2Bus_RdAck         ,
+	           IP2Bus_WrAck         ,
+	           IP2Bus_Retry         ,
+	           IP2Bus_Error         ,
+	           IP2Bus_ToutSup       ,
+  	       	   IP2RFIFO_WrReq       ,
+                   IP2RFIFO_Data        ,
+                   RFIFO2IP_WrAck       ,
+                   RFIFO2IP_AlmostFull  ,
+                   RFIFO2IP_Full        ,
+                   IP2WFIFO_RdReq       ,
+                   WFIFO2IP_Data        ,
+                   WFIFO2IP_RdAck       ,
+                   WFIFO2IP_AlmostEmpty ,
+                   WFIFO2IP_Empty       );
+
+   always { }
+}
+
+
+system S {
+  top;
+}

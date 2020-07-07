@@ -1,0 +1,46 @@
+// $Id: cycle.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+//
+// Cycle count printer for GEZEL
+// Each time a 0->1 transition appears at the memory mapped itf,
+// the system cycle count is printed.
+// This is used in combination with a function call in C (print_cycle())
+// to help with runtime profiling.
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=cycle";
+}
+
+// instruction input
+ipblock b_ins(out data : ns(8)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm";
+  ipparm "address=0x80000000";
+}
+
+dp print_cycle(in data : ns(8)) {
+  reg dr : ns(8);
+  sfg run  { dr = data; }
+  sfg show { $display("Cycle: ", $cycle); }
+}
+fsm fsm_print_cycle(print_cycle) {
+  initial s0;
+  state s1, s2;
+  @s0 (run) -> s1;
+  @s1 if (dr)  then (show, run) -> s2;
+               else (run)       -> s1;
+  @s2 if (dr)  then (run)       -> s2;
+               else (run)       -> s1;
+}
+
+dp dp_sys {
+  sig data : ns(8);
+  use myarm;
+  use b_ins(data);
+  use print_cycle(data);
+}
+
+system S {
+  dp_sys;
+}
+

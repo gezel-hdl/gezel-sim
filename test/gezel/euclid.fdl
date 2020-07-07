@@ -1,0 +1,55 @@
+
+// Euclid processor
+// Copyright 2003 Patrick Schaumont (schaum@ee.ucla.edu)
+// $Id: euclid.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+
+dp euclid(in  m_in, n_in : ns(16);
+          out gcd        : ns(16)) {
+  reg m, n               : ns(16);
+  reg done               : ns(1);
+  reg factor             : ns(16);
+
+  sfg init    { m = m_in; n = n_in; factor = 0; done = 0; gcd = 0;
+                $display("cycle=", $cycle, " m=", m_in, " n=", n_in); }
+  sfg shiftm  { m = m >> 1; }
+  sfg shiftn  { n = n >> 1; }
+  sfg reduce  { m = (m >= n) ? m - n : m;  
+                n = (n >  m) ? n - m : n; }
+  sfg shiftf  { factor = factor + 1; } 
+  sfg outidle { gcd = 0; done = ((m == 0) | (n == 0)); }
+  sfg complete{ gcd = ((m > n) ? m : n) << factor;
+                $display("cycle=", $cycle, " gcd=", gcd); }
+}
+
+fsm euclid_ctl(euclid) {
+  initial s0;
+  state s1, s2;
+
+  @s0 (init) -> s1;
+  @s1 if (done)               then (complete)          -> s2;
+      else if ( m[0] &  n[0]) then (reduce, outidle)   -> s1;
+      else if ( m[0] & ~n[0]) then (shiftn, outidle)   -> s1;
+      else if (~m[0] &  n[0]) then (shiftm, outidle)   -> s1;
+                              else (shiftn, shiftm, 
+                                    shiftf, outidle)   -> s1;
+  @s2 (outidle) -> s2;
+}
+
+dp test_euclid(out m, n : ns(16)) {
+  always {
+    m = 2322;
+    n = 654;
+  }    
+}
+
+dp euclid_sys {
+   sig m, n, gcd : ns(16);
+   use euclid(m, n, gcd);
+   use test_euclid(m, n);
+}
+
+system S {
+  euclid_sys;
+}
+

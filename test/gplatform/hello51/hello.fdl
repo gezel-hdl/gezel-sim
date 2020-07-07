@@ -1,0 +1,55 @@
+// Copyright (C) 2005 Patrick Schaumont (schaum@ee.ucla.edu)                   
+// University of California at Los Angeles
+// $Id: hello.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+
+dp hello_decoder(in   ins : ns(8);
+                 in   din : ns(8)) {
+  reg insreg : ns(8);
+  reg dinreg : ns(8);
+  sfg decode   { insreg = ins; 
+	         dinreg = din; }
+  sfg hello    { $display($cycle, " Hello! You gave me ", dinreg); } 
+}
+
+fsm fhello_decoder(hello_decoder) {
+  initial s0;
+  state s1, s2;
+  @s0 (decode) -> s1;
+  @s1 if (insreg == 1) then (hello, decode) -> s2;
+                       else (decode)        -> s1;
+  @s2 if (insreg == 0) then (decode)        -> s1;
+                       else (decode)        -> s2;
+}
+
+ipblock my8051 {
+  iptype "i8051system";
+  ipparm "exec=driver.ihx";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock my8051_ins(out data : ns(8)) {
+  iptype "i8051systemsource";
+  ipparm "core=my8051";
+  ipparm "port=P0";
+}
+
+ipblock my8051_datain(out data : ns(8)) {
+  iptype "i8051systemsource";
+  ipparm "core=my8051";
+  ipparm "port=P1";
+}
+
+dp sys {
+  sig ins, din : ns(8);
+
+  use my8051;
+  use my8051_ins(ins);
+  use my8051_datain(din);
+  use hello_decoder(ins, din);
+
+}
+
+system S {
+  sys;
+}

@@ -1,0 +1,16 @@
+;       ENABLE INTERRUPT
+INIT:   LOAD    SA,01   ;INITIAL VALUE IS 15
+LOOP:   OUTPUT  SA,60   ;SEND IT OUT ON PORT 60
+ACK1:   INPUT   SB,20
+        COMPARE SB,00    ;READ RESPONSE
+        JUMP    Z,ACK1
+        LOAD    SB,00
+        OUTPUT  SB,60    ;SEND 2nd half of handshake
+ACK2:   INPUT   SB,20    ;READ RESPONSE
+        COMPARE SB,00
+        JUMP    NZ,ACK2
+        ADD     SA,01
+        COMPARE SA,00    ;make sure we don't use 0 as a data value
+        JUMP    NZ,LOOP
+        ADD     SA,01
+        JUMP    LOOP    ;KEEP DOING IT FOREVER

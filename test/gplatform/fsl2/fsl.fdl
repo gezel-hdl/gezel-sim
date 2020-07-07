@@ -1,0 +1,83 @@
+ipblock arm1 {
+  iptype "armsystem";
+  ipparm "exec = fsldrive";
+}
+
+ipblock fsl1(out data   : ns(32);
+             out exists : ns(1);
+             in  read   : ns(1)) {
+  iptype "armfslslave";
+  ipparm "core=arm1";
+  ipparm "write=0x80000000";
+  ipparm "status=0x80000004";
+}
+
+ipblock fsl2(in  data   : ns(32);
+             out full   : ns(1);
+             in  write  : ns(1)) {
+  iptype "armfslmaster";
+  ipparm "core=arm1";
+  ipparm "read=0x80000008";
+  ipparm "status=0x8000000C";
+}
+
+dp gezelfslcopy(in  rdata   : ns(32);  // interface to slave
+                in  exists  : ns(1);
+                out read    : ns(1);
+
+                out wdata   : ns(32);  // interface to master
+                in  full    : ns(1);
+                out write   : ns(1)) {
+
+  reg rexists, rfull : ns(1);
+  reg rcopy : ns(32);
+
+  reg counter : ns(32);
+
+  always {
+   rexists = exists;
+   rfull   = full;
+   wdata   = rcopy;
+  }
+
+  sfg dowrite   { write = 1; }
+  sfg dontwrite { write = 0; }
+  sfg doread    { read = 1; }
+  sfg dontread  { read = 0; }
+
+  sfg capture   { rcopy   = rdata; 
+                  $display("HW captures data: ", rdata);
+                }
+  sfg countrst  { counter = 3000; }
+  sfg countdec  { counter = counter - 1;}                   
+}
+fsm fsm_gezelfslcopy(gezelfslcopy) {
+  initial s0;
+  state s1, s2, s3, swait;
+
+  // wait for SW to write slave
+  @s0 if (rexists) then (capture , countrst, dontread, dontwrite) -> swait;
+                   else (dontread, dontwrite)                     -> s0;
+
+  // after SW has written slave, wait 10^6 cycles before completing read op in HW
+  @swait if (counter != 0) then (countdec, dontread, dontwrite) -> swait;
+                      else (doread, dontwrite)             -> s1;
+
+  // after read op completes, do a write to the master
+  @s1 if (rfull)   then (dontread, dontwrite)         -> s1;
+                   else (dowrite , dontread )         -> s0;
+}
+
+dp top {
+  sig rdata, wdata : ns(32);
+  sig write, read  : ns(1);
+  sig exists, full : ns(1);
+  use arm1;
+  use fsl1(rdata, exists, read);
+  use fsl2(wdata, full, write);
+  use gezelfslcopy(rdata, exists, read, wdata, full, write);
+}
+
+system S {
+  top;
+}

@@ -1,0 +1,22 @@
+// Copyright (c) 2005 Patrick Schaumont
+// University of California at Los Angeles
+// $Id: counter2.fdl,v 1.1.1.1 2005/07/14 17:32:46 schaum Exp $
+
+dp mycounter(out v : ns(32)) {
+  reg a : ns(5);
+  always {
+   a = a + 1;
+   v = a;
+   $display("counter = ", a);
+  }
+} 
+
+ipblock myjavasink(in data : ns(32)) {
+  iptype "javasink";
+  ipparm "var=myoutput";
+}
+
+system S {
+  mycounter(a);
+  myjavasink(a);
+}

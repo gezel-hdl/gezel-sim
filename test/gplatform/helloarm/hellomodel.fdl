@@ -1,0 +1,19 @@
+// Copyright (C) 2005 Patrick Schaumont (schaum@ee.ucla.edu)                   
+// University of California at Los Angeles
+// $Id: hellomodel.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+
+ipblock myarm1 {
+  iptype "armsystem";
+//  ipparm "fpe_name=/usr/local/gezel/share/nwfpe.bin";
+  ipparm "exec=hello Jefke Piet and Pol";
+}
+
+ipblock myarm2 {
+  iptype "armsystem";
+  ipparm "exec=hello Jefke Piet and Pol";
+}
+
+system S {
+  myarm1;
+  myarm2;
+}

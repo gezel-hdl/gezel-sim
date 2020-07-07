@@ -1,0 +1,15 @@
+;       ENABLE  INTERRUPT
+        LOAD    SA,00
+        LOAD    SA,00
+        LOAD    SA,00
+        LOAD    SA,00
+        LOAD    SA,00     ; STARTUP DELAY
+INIT:   INPUT   SA, 20
+        COMPARE SA,00
+        JUMP    Z, INIT
+        OUTPUT  SA, 60
+ACK2:   INPUT   SA, 20
+        COMPARE SA,00
+        JUMP    NZ, ACK2
+        OUTPUT  SA, 60
+        JUMP    INIT

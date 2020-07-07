@@ -1,0 +1,113 @@
+ipblock my8051 {
+  iptype "i8051system";
+  ipparm "exec=ramrw.ihx";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock my8051_cmdo(out data : ns(8)) {
+  iptype "i8051systemsource";
+  ipparm "core=my8051";
+  ipparm "port=P0";
+}
+
+ipblock my8051_cmdi(in data : ns(8)) {
+  iptype "i8051systemsink";
+  ipparm "core=my8051";
+  ipparm "port=P1";
+}
+
+ipblock my8051_xram(in  idata   : ns(8);
+                    out odata   : ns(8);
+                    in  address : ns(6);
+                    in  wr      : ns(1)) {
+  iptype "i8051buffer";
+  ipparm "core=my8051";
+  ipparm "xbus=0x4000";
+  ipparm "xrange=0x40"; // 64 locations at address 0x4000
+}
+
+dp ctl(in req  : ns(1); out ack  : ns(1); in id : ns(1)) {
+
+   reg rreq, rack, rid : ns(1);
+
+   reg radr   : ns(6);
+   reg racc   : ns(8);
+
+   sig adr    : ns(6);
+   sig ramin, ramout : ns(8);
+   sig ramw   : ns(1);
+
+   reg ramofs : ns(6);
+
+   use my8051_xram(ramin, ramout, adr, ramw);
+
+   always        { rreq   = req; 
+                   rid    = id; 
+                   adr    = radr; 
+                   ramw   = 0;
+                   ramin  = racc; }
+   sfg noack     { ack    = 0;    }
+   sfg doack     { ack    = 1;    }
+   sfg getramofs { ramofs = id ? 0x20 : 0x0; 
+                   $display($cycle, " id ", id, " ramofs ", ramofs);
+                 }
+   sfg readram0  { radr   = ramofs; }
+   sfg readram1  { radr   = radr + 1; 
+                   $display($cycle, " ram radr ", radr, " data ", ramout);
+                 } 
+
+}
+
+fsm fctl(ctl) {
+  initial s0;
+  state s1, s2, s3, s4, s5, s6;
+
+  @s0 if (~rreq) then (noack, $trace)                -> s1;
+                 else (noack)                        -> s0;
+
+  //-----
+  @s1 if (rreq) then (doack, getramofs, $trace)      -> s2;
+                else (noack)                         -> s1;
+
+
+  //----- rreq=1 and ack=1 / access ram on selected id
+  @s2 (readram0, doack, $trace)                      -> s3;
+  @s3 if (radr == 0xA) then (doack, $trace)          -> s4;
+                      else (readram1, doack)         -> s3;
+
+
+  @s4 if (~rreq) then (noack, getramofs, $trace)     -> s5;
+                 else (doack)                        -> s4;
+
+  //----- rreq=0 and ack=0 / access ram on selected id
+  @s5 (readram0, noack, $trace)                      -> s6;
+  @s6 if (radr == 0x2A) then (doack, $trace)         -> s1;
+                      else (readram1, doack)         -> s6;
+
+
+}
+
+dp top {
+
+  sig P0o, P0i : ns(8);
+
+  use my8051;
+  use my8051_cmdo(P0o);
+  use my8051_cmdi(P0i);
+
+  sig req, ack, id : ns(1);
+  use ctl(req, ack, id);
+
+  always {
+    req = P0o[0];
+    id  = P0o[1];
+    P0i = ack;
+//    $display($cycle, " req ", req, " ack ", ack, " id ", id);
+  }
+}
+
+
+system S {
+  top;
+}

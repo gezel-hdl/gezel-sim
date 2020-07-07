@@ -1,0 +1,60 @@
+// Copyright (C) 2005 Patrick Schaumont (schaum@ee.ucla.edu)                   
+// University of California at Los Angeles
+// $Id: intf.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+ipblock myarm2 {
+  iptype "armsystem";
+  ipparm "exec=reader";
+  ipparm "period = 2";  // make reader run 2 times slower than system clock
+}
+
+ipblock myarm1 {
+  iptype "armsystem";
+  ipparm "exec=writer";
+}
+
+ipblock channelsrc1(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm1";
+  ipparm "address=0x80000000";
+}
+
+ipblock channelsrc2(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm2";
+  ipparm "address=0x80000000";
+}
+
+ipblock channelsnk1(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm1";
+  ipparm "address=0x80000004";
+}
+
+ipblock channelsnk2(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm2";
+  ipparm "address=0x80000004";
+}
+
+dp sys {
+  sig src1, src2, snk1, snk2 : ns(32);
+
+  use myarm1;
+  use myarm2;
+  use channelsrc1(src1);
+  use channelsnk1(snk1);
+  use channelsrc2(src2);
+  use channelsnk2(snk2);
+  
+  always {
+    snk2 = src1;
+    snk1 = src2;
+  }
+}
+
+dp sys2 : sys
+
+system S {
+  sys;
+}

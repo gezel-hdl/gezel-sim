@@ -1,0 +1,90 @@
+
+// Bresenham line plotter for points in an arbitrary octant
+// Copyright 2003 Patrick Schaumont (schaum@ee.ucla.edu)
+// $Id: bresen.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+dp bresen(in x1_in, y1_in, x2_in, y2_in : tc(12)) {
+  reg x, y             : tc(12);  // current plot position
+  reg e                : tc(12);  // accumulated error
+  reg eol              : tc(1);  // end-of-loop flag
+  reg einc1, einc2     : tc(12);  // increment values for straight/diagonal
+  reg xinc1, xinc2     : tc(12);
+  reg yinc1, yinc2     : tc(12);
+  sig se, sdx, sdy     : tc(12); 
+  sig asdx, asdy       : tc(12);
+  sig stepx, stepy     : tc(12);
+
+  sfg init {
+    // evaluate range of pixels and their absolute value
+    sdx   = x2_in - x1_in;  asdx = (sdx < 0) ? -sdx : sdx;
+    sdy   = y2_in - y1_in;  asdy = (sdy < 0) ? -sdy : sdy;
+
+    // determine direction of x and y increments
+    stepx = (sdx < 0) ? -1 : 1;
+    stepy = (sdy < 0) ? -1 : 1;
+
+    // initial error
+    se    = (asdx > asdy) ? 2 * asdy - asdx : 2 * asdx - asdy;
+
+    // error increment for straight (einc1) and diagonal (einc2) step
+    einc1 = (asdx > asdy) ? (asdy - asdx) : (asdx - asdy);
+    einc2 = (asdx > asdy) ?  asdy         :  asdx;
+
+    // increment in x direction for straight and diagonal steps
+    xinc1 = (asdx > asdy) ? stepx : stepx;
+    xinc2 = (asdx > asdy) ? stepx : 0;
+
+    // increment in y direction for straight and diagonal step
+    yinc1 = (asdx > asdy) ? stepy : stepy;
+    yinc2 = (asdx > asdy) ? 0     : stepy;
+
+    // initialize registers
+    x    = x1_in;  y    = y1_in; 
+    e    = se;
+  }
+
+  // simple end-of-loop test
+  sfg looptest {
+    eol   = ((x == x2_in) & (y == y2_in));
+  }
+
+  // loop body: adjust x, y and error accumulator
+  //            use error value to decide straight or diagonal step
+  sfg loop {
+    x     = (e >= 0) ? x + xinc1 : x + xinc2;
+    y     = (e >= 0) ? y + yinc1 : y + yinc2;
+    e     = (e >= 0) ? e + einc1 : e + einc2;
+    $display($hex, "Cycle: ", $cycle, " Plot point (", x, ",", y, ") ");
+  }
+}
+
+// controller for bresenham algorithm
+// initializes, draws one line and then waits in state s3
+fsm f_bresen(bresen) {
+  initial s0;
+  state s1, s2, s3;
+  @s0 (init)                         -> s1;
+  @s1 (loop, looptest)               -> s2;
+  @s2 if (eol) then (init)           -> s3;
+               else (loop, looptest) -> s2;
+  @s3 (init) -> s3;
+}
+
+// testbench
+dp test_bresen(out x1, y1, x2, y2 : tc(12)) {
+  sig sx : tc(12);
+  always {
+    x1 = 5; x2 = 18; y1 = 2; y2 = 8;
+  }    
+}
+
+dp bresen_sys {
+  sig x1, y1, x2, y2 : tc(12);
+  use bresen(x1, y1, x2, y2);
+  use test_bresen(x1, y1, x2, y2);
+}
+
+system S {
+  bresen_sys;
+}
+

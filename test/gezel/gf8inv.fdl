@@ -1,0 +1,281 @@
+
+// GF(2^8) Inversion Box
+// based on
+// "An ASIC Implementation of the AES Boxes", J. Wolkerstorfer et al, RSA2002
+//
+// Copyright 2003 Patrick Schaumont (schaum@ee.ucla.edu)
+// $Id: gf8inv.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+
+
+//-------------------------------------------------
+// map converts GF(2^8) elements to dual GF(2^4) elements such that 
+// there is a unique mapping from GF(2^8) to GF((2^4)^2)
+// Formula (11) of Wolkerstorfer paper
+
+dp map(in a : ns(8); out ah,al : ns(4)) {
+  sig  aA,  aB,  aC : ns(1);
+  sig ah3, ah2, ah1, ah0 : ns(1);
+  sig al3, al2, al1, al0 : ns(1);
+
+  always {
+    aA  = a[1] ^ a[7];
+    aB  = a[5] ^ a[7];
+    aC  = a[4] ^ a[6];
+
+    al3 = a[2] ^ a[4];
+    al2 = aA;
+    al1 = a[1] ^ a[2];
+    al0 = aC ^ a[0] ^ a[5];
+    al  = (al3 << 3) | (al2 << 2) | (al1 << 1) | al0;
+
+    ah3 = aB;
+    ah2 = aB ^ a[2] ^ a[3];
+    ah1 = aA ^ aC;
+    ah0 = aC ^ a[5];
+    ah  = (ah3 << 3) | (ah2 << 2) | (ah1 << 1) | ah0;          
+  }
+}
+
+//-------------------------------------------------
+// invmap converts dual GF(2^4) elements to a GF(2^8) element such that 
+// there is a unique mapping from GF((2^4)^2) to GF(2^8)
+// formula 12 Wolkerstorfer
+
+dp invmap(in ah,al : ns(4); out a : ns(8)) {
+  sig  aA,  aB : ns(1);
+  sig a3, a2, a1, a0 : ns(1);
+  sig a4, a5, a6, a7 : ns(1);
+
+  always {
+    aA = al[1] ^ ah[3];
+    aB = ah[0] ^ ah[1];
+    a0 = al[0] ^ ah[0];
+    a1 = aB    ^ ah[3];
+    a2 = aA    ^ aB;
+    a3 = aB    ^ al[1] ^ ah[2];
+    a4 = aA    ^ aB ^ al[3];
+    a5 = aB    ^ al[2];
+    a6 = aA    ^ al[2] ^ al[3] ^ ah[0];
+    a7 = aB    ^ al[2] ^ ah[3];
+
+    a  = (a7 << 7) | (a6 << 6) | (a5 << 5) | (a4 << 4) |
+         (a3 << 3) | (a2 << 2) | (a1 << 1) | a0;
+
+//    $display($cycle, " inverted ", a);
+  } 
+}
+
+//-------------------------------------------------
+// GF(2^4) squarer
+// formula 8 Wolkerstorfer
+
+dp sqr_1(in a : ns(4); out c : ns(4)) {
+  sig c0, c1, c2, c3 : ns(1);
+
+  always {
+    c0 = a[0] ^ a[2];
+    c1 = a[2];
+    c2 = a[1] ^ a[3];
+    c3 = a[3];
+
+    c = (c3 << 3) | (c2 << 2) | (c1 << 1) | c0;
+//    $display($cycle, " square out ", c);
+  }
+}
+
+dp sqr_2 : sqr_1
+
+//-------------------------------------------------
+// GF(2^4) inversion block
+// formula 9 wolkerstorfer
+
+dp inv(in a: ns(4); out c : ns(4)) {
+   sig c0, c1, c2, c3, aA : ns(1);
+
+   always {
+
+//     c = ( a == 0 ) ? 0 :
+//         ( a == 1 ) ? 1 :
+//         ( a == 2 ) ? 0xf :
+//         ( a == 3 ) ? 0xa :
+//         ( a == 4 ) ? 8 :
+//         ( a == 5 ) ? 6 :
+//         ( a == 6 ) ? 5 :
+//         ( a == 7 ) ? 9 :
+//         ( a == 8 ) ? 4 :
+//         ( a == 9 ) ? 7 :
+//         ( a == 0xa ) ? 3 :
+//         ( a == 0xb ) ? 0xe :
+//         ( a == 0xc ) ? 0xd :
+//         ( a == 0xd ) ? 0xc :
+//         ( a == 0xe ) ? 0xb :
+//                        2 ;
+
+     aA = a[1] ^ a[2] ^ a[3] ^ (a[1] & a[2] & a[3]);
+     c0 = aA ^ a[0] ^ (a[0] & a[2]) ^ (a[1] & a[2]) ^ (a[0] & a[1] & a[2]);
+     c1 = (a[0] & a[1]) ^ (a[0] & a[2]) ^ (a[1] & a[2]) ^ a[3] ^
+          (a[1] & a[3]) ^ (a[0] & a[1] & a[3]);
+     c2 = (a[0] & a[1]) ^ a[2] ^ (a[0] & a[2]) ^ a[3] ^
+          (a[0] & a[3]) ^ (a[0] & a[2] & a[3]);
+     c3 = aA ^ (a[0] & a[3]) ^ (a[1] & a[3]) ^ (a[2] & a[3]);
+
+     c = (c3 << 3) | (c2 << 2) | (c1 << 1) | c0;
+
+//     $display($cycle, " inverse ", c);
+   }
+}
+
+//-------------------------------------------------
+dp add4(in a,b : ns(4); out c : ns(4)) {
+  always {
+    c = a ^ b;
+
+//    $display($cycle, " add_out ", c);
+  }
+}
+
+dp add4_2 : add4
+dp add4_3 : add4
+
+
+//-------------------------------------------------
+// multiplier in GF(2^4)
+// formula 7 wolkerstorfer
+
+dp mul4(in a,b : ns(4); out q : ns(4)) {
+  sig  aA,  aB : ns(1);
+  sig q0, q1, q2, q3 : ns(1);
+
+  sig acc0, acc1, acc2, acc3 : ns(4);
+
+  always {
+    aA = a[0] ^ a[3];
+    aB = a[2] ^ a[3];
+    q0 = (a[0] & b[0]) ^ (a[3] & b[1]) ^ (a[2] & b[2]) ^  (a[1] & b[3]);
+    q1 = (a[1] & b[0]) ^ (aA   & b[1]) ^ (aB   & b[2]) ^ ((a[1] ^ a[2]) & b[3]);
+    q2 = (a[2] & b[0]) ^ (a[1] & b[1]) ^ (aA   & b[2]) ^  (aB & b[3]);
+    q3 = (a[3] & b[0]) ^ (a[2] & b[1]) ^ (a[1] & b[2]) ^  (aA & b[3]);
+    q = (q3 << 3) | (q2 << 2) | (q1 << 1) | q0;
+    
+//    acc0 = (a & (tc(1)) b[3]);
+//    acc1 = (a & (tc(1)) b[2]) ^ (acc0 << 1) ^ (0b0011 & (tc(1)) acc0[3]);
+//    acc2 = (a & (tc(1)) b[1]) ^ (acc1 << 1) ^ (0b0011 & (tc(1)) acc1[3]);
+//    acc3 = (a & (tc(1)) b[0]) ^ (acc2 << 1) ^ (0b0011 & (tc(1)) acc2[3]);
+//    q    = acc3;
+
+//    $display(q);
+  }
+
+}
+
+dp mul4_2 : mul4
+dp mul4_3 : mul4
+
+//-------------------------------------------------
+// GF(2^4) 0xe-constant multiplier
+// formula 15 wolkerstorfer
+
+dp mul4e(in a: ns(4); out c: ns(4)) {
+  sig c0, c1, c2, c3, aA, aB : ns(1);
+
+  sig acc0, acc1, acc2, acc3 : ns(4);
+  sig b : ns(4);
+
+  always {
+    aA = a[0] ^ a[1];
+    aB = a[2] ^ a[3];
+    c0 = a[1] ^ aB;
+    c1 = aA;
+    c2 = aA ^ a[2];
+    c3 = aA ^ aB;
+
+    c = (c3 << 3) | (c2 << 2) | (c1 << 1) | c0;
+
+//    b = 0xe;
+//
+//    acc0 = (a & (tc(1)) b[3]);
+//    acc1 = (a & (tc(1)) b[2]) ^ (acc0 << 1) ^ (0b0011 & (tc(1)) acc0[3]);
+//    acc2 = (a & (tc(1)) b[1]) ^ (acc1 << 1) ^ (0b0011 & (tc(1)) acc1[3]);
+//    acc3 = (a & (tc(1)) b[0]) ^ (acc2 << 1) ^ (0b0011 & (tc(1)) acc2[3]);
+//    c    = acc3;
+
+  }
+}
+
+
+//-------------------------------------------------
+// affine transform  for encryption
+// formula 14 wolkerstorfer
+
+dp afine(in a : ns(8); out q : ns(8)) {
+  sig q0, q1, q2, q3, q4, q5, q6, q7 : ns(1);
+  sig aA, aB, aC, aD : ns(1);
+
+  always {
+    aA = a[0] ^ a[1];
+    aB = a[2] ^ a[3];
+    aC = a[4] ^ a[5];
+    aD = a[6] ^ a[7];
+    q0 = ~a[0] ^ aC ^ aD;
+    q1 = ~a[5] ^ aA ^ aD;
+    q2 =  a[2] ^ aA ^ aD;
+    q3 =  a[7] ^ aA ^ aB;
+    q4 =  a[4] ^ aA ^ aB;
+    q5 = ~a[1] ^ aB ^ aC;
+    q6 = ~a[6] ^ aB ^ aC;
+    q7 =  a[3] ^ aC ^ aD;
+
+    q  = (q7 << 7) | (q6 << 6) | (q5 << 5) | (q4 << 4) |
+         (q3 << 3) | (q2 << 2) | (q1 << 1) | q0;
+
+    $display($cycle, " affine output ", q);
+  }
+
+}
+
+//-------------------------------------------------
+
+dp tb(out a1,a2: ns(8)) {
+
+  reg cnt : ns(8);
+  reg m16 : ns(1);
+
+  always {
+    cnt  = cnt + 1;
+    a1   = cnt;
+    a2   = 0;
+    $display($cycle, " input ", a1, " ", a2);
+  }
+}
+
+//-------------------------------------------------
+
+dp gf8inv_sys {
+  sig input              : ns(8);
+  sig in_h,     in_l     : ns(4);
+  sig in_h_sqr, in_l_sqr : ns(4);
+  sig mul4_1o,  add4_2o  : ns(4);
+  sig add4_3o,  add4_1o  : ns(4);
+  sig d,        mul4_2o  : ns(4);
+  sig mul4_3o,  mul4e_o  : ns(4);
+  sig invmap_out, output : ns(8);
+  use tb    (input                           );
+  use   map   (input,      in_h,     in_l      );
+  use   sqr_1 (in_h,       in_h_sqr            );
+  use   sqr_2 (in_l,       in_l_sqr            );
+  use   mul4  (in_h,       in_l,     mul4_1o   );    
+  use   add4  (in_h,       in_l,     add4_1o   );    
+  use   mul4e (in_h_sqr,   mul4e_o             );
+  use   add4_2(in_l_sqr,   mul4e_o,  add4_2o   );
+  use   add4_3(add4_2o,    mul4_1o,  add4_3o   );
+  use   inv   (add4_3o,    d                   );
+  use   mul4_2(in_h,       d,        mul4_2o   );
+  use   mul4_3(d,          add4_1o,  mul4_3o   );
+  use   invmap(mul4_2o,    mul4_3o,  invmap_out);
+  use   afine (invmap_out, output              );
+}
+
+system S {
+  gf8inv_sys;
+}

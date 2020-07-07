@@ -1,0 +1,38 @@
+This is README for GEZEL 2.2
+
+Introduction
+------------
+
+GEZEL is a language and open environment for exploration, simulation,
+and implementation of cycle-true hardware models. The models can be
+simulated stand-alone, or cosimulated with one of the supported
+instruction set simulators.
+
+The GEZEL core is a C++ library that can be easily integrated into
+other system simulation projects. This release includes the GEZEL
+library along with several tools:
+	- A Stand-alone simulator for GEZEL code
+        - A Cosimulator for SystemC 2.0.1
+        - A Cosimulator for JAVA models, with examples for the AVRORA ISS
+        - A Cosimulator for MPSOC of i8051, ARM, Picoblaze
+
+Installation
+------------
+
+Please refer to http://rijndael.ece.vt.edu/gezel2
+
+Contact Information
+-------------------
+
+We appreciate feedback, bug reports.
+Contact: Patrick Schaumont (schaum@vt.edu)
+
+The GEZEL homepage is http://rijndael.ece.vt.edu/gezel2
+It contains additional examples, documentation and papers related to
+GEZEL.
+
+There is also an email list that will keep you up to do of new
+developments at http://groups.yahoo.com/group/gezel
+
+The freshmeat project page for gezel is at:
+http://freshmeat.net/projects/gezel/

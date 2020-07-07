@@ -1,0 +1,96 @@
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=ramrw";
+}
+
+ipblock myarm_cmdo(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm";
+  ipparm "address=0x80000000";
+}
+
+ipblock myarm_cmdi(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm";
+  ipparm "address=0x80000004";
+}
+
+ipblock myarm_xram(in  idata   : ns(32);
+                   out odata   : ns(32);
+                   in  address : ns(12);
+                   in  wr      : ns(1)) {
+  iptype "armbuffer";
+  ipparm "core=myarm";
+  ipparm "address=0x80001000";
+  ipparm "range=0xfff";       // 4K block at 0x80001000
+}
+
+dp ctl(in  req  : ns(1); 
+       out ack  : ns(1)) {
+
+   reg radr       : ns(12);
+   reg rreq       : ns(1);
+   reg rack       : ns(1);
+   reg cnt        : ns(32);
+   reg loop       : ns(12);
+
+   sig ramin      : ns(32);
+   sig ramout     : ns(32);
+   sig adr        : ns(12);
+   sig ramw       : ns(1);
+
+   use myarm_xram(ramin, ramout, adr, ramw);
+
+   always        { rreq   = req; 
+                   adr    = radr; 
+                   ramin  = cnt;    }
+   sfg noack     { ack    = 0;      }
+   sfg doack     { ack    = 1;      }
+
+   sfg wram      { cnt    = cnt + 1;
+		   radr   = radr + 4;
+                   ramw   = 1;      
+                   loop   = loop - 1; }
+
+   sfg idle      { radr   = 0;
+                   ramw   = 0;      
+                   loop   = 0;  }
+}
+
+fsm fctl(ctl) {
+  initial s0;
+  state s1, s2, s3;
+
+  @s0 if (rreq == 0) then (idle, noack) -> s0;
+                     else (wram, noack) -> s1;
+
+  @s1 if (loop == 0) then (idle, doack) -> s2;
+                     else (wram, noack) -> s1;
+
+  @s2 if (rreq != 0) then (idle, doack) -> s2;
+                     else (wram, doack) -> s3;
+
+  @s3 if (loop == 0) then (idle, noack) -> s0;
+                     else (wram, doack) -> s3;
+}
+
+dp top {
+  sig Po, Pi : ns(32);
+
+  use myarm;
+  use myarm_cmdo(Po);
+  use myarm_cmdi(Pi);
+
+  sig req, ack : ns(1);
+  use ctl(req, ack);
+
+  always {
+    req = Po[0];
+    Pi  = ack;
+  }
+}
+
+
+system S {
+  top;
+}

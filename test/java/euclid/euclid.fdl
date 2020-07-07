@@ -1,0 +1,83 @@
+// Copyright (c) 2005 Patrick Schaumont
+// University of California at Los Angeles
+// $Id: euclid.fdl,v 1.1.1.1 2005/07/14 17:32:46 schaum Exp $
+
+dp euclid(in  m_in, n_in : ns(16);
+          out gcd        : ns(16);
+          in  ld         : ns(1);
+          out busy       : ns(1)) {
+  reg m, n               : ns(16);
+  reg done               : ns(1);
+  reg factor             : ns(16);
+  reg start              : ns(1);
+
+  sfg init    { m      = m_in; 
+		n      = n_in; 
+		factor = 0; 
+		done   = 0; 
+		start  = ld; }
+  sfg flags   { done = ((m == 0) | (n == 0));  }
+  sfg shiftm  { m = m >> 1; }
+  sfg shiftn  { n = n >> 1; }
+  sfg reduce  { m = (m >= n) ? m - n : m;  
+                n = (n >  m) ? n - m : n; }
+  sfg shiftf  { factor = factor + 1; } 
+  sfg outidle { gcd  = 0; 
+		busy = 0; }
+  sfg outbusy { gcd  = 0; // $display("m ", m, " n ", n);
+		start= 0;
+		busy = 1; }
+  sfg complete{ gcd  = ((m > n) ? m : n) << factor;
+                busy = 0;
+                $display("cycle=", $cycle, " gcd=", gcd); }
+}
+
+fsm euclid_ctl(euclid) {
+  initial s0;
+  state s1, s2;
+
+  @s0 if (start) then (outbusy)       -> s1;
+                 else (init, outidle) -> s0;
+  @s1 if (done)               then (complete)                 -> s2;
+      else if ( m[0] &  n[0]) then (reduce, outbusy, flags)   -> s1;
+      else if ( m[0] & ~n[0]) then (shiftn, outbusy, flags)   -> s1;
+      else if (~m[0] &  n[0]) then (shiftm, outbusy, flags)   -> s1;
+                              else (shiftn, shiftm, 
+                                    shiftf, outbusy, flags)   -> s1;
+  @s2 if (start) then (init, outbusy) -> s1;
+                 else (complete)      -> s2;
+}
+
+ipblock java_m(out data : ns(32)) {
+  iptype "javasource";
+  ipparm "var=m";
+}
+
+ipblock java_n(out data : ns(32)) {
+  iptype "javasource";
+  ipparm "var=n";
+}
+
+ipblock java_ld(out data : ns(32)) {
+  iptype "javasource";
+  ipparm "var=ld";
+}
+
+ipblock java_gcd(in data : ns(32)) {
+  iptype "javasink";
+  ipparm "var=gcd";
+}
+
+ipblock java_busy(in data : ns(32)) {
+  iptype "javasink";
+  ipparm "var=busy";
+}
+
+system S {
+  euclid(m, n, gcd, ld, busy);
+  java_m(m);
+  java_n(n);
+  java_gcd(gcd);
+  java_ld(ld);
+  java_busy(busy);
+}

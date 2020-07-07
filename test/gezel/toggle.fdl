@@ -1,0 +1,67 @@
+// Several options of toggle counting are illustrated below
+
+// Selection of toggle sensitivity
+
+$option "profile_toggle_upedge"      // count 0->1 transitions only
+
+// $option "profile_toggle_alledge"  // count 0->1 and 1->0 transitions
+
+// Selection of hardware to analyzer
+// By default, toggle counts relate to the entire system
+// By including 'toggle_include', toggle counts can be restricted
+// to specific data paths. Multiple toggle_include can be used
+// to select a subset of datapaths. Toggle_include does *not*
+// extend into a structural hierarchy. This allows to extract
+// toggle estimations related to a single hierarchical level.
+
+// $option "toggle_include counter"  // include toggles of dp counter
+
+// $option "toggle_include adder"    // include toggles of dp adder
+
+// Selection of toggle weights
+// By default, toggle weigths are 1 for all bits of a word
+// By including 'toggle_weights', different bits in a word will have
+// different weights. For example
+// $option "toggle_weights 500 501"
+// will attach weight 500 to bit 0 and weight 501 to bit 1
+
+// The resulting intermediate toggle count for the settings above
+// is available in the meta-variable $toggle, which can be used
+// in $display statements 
+
+// One can also make automatic toggle count display statements
+// with the following two options. 
+
+// Print the toggle count each cycle with
+$option "profile_display_operations"
+
+// Print a summary operation profile at the end of the simulation with
+// $option "profile_display_cycles"
+
+dp counter(out v : ns(4)) {
+  reg r : ns(4);
+  always {
+    r = r - 1;
+    v = r;
+  }
+}
+
+dp adder(in v : ns(4); out w : ns(4)) {
+  always {
+    w = v + 3;
+  }
+}
+
+dp top {
+  sig v, w : ns(4);
+  use counter(v);
+  use adder(v,w);
+  always {
+    $display("Cycle ", $cycle, " Toggle ", $toggle, " Counter ", v);
+  }
+}
+
+system S {
+  top;
+}
+

@@ -1,0 +1,48 @@
+ipblock fromsystemc(out data : ns(32)) {
+  iptype "systemcsource";  // type of block
+  ipparm "var=var1";       // channel name specified in SystemC code
+}
+
+ipblock tosystemc(in data : ns(32)) {
+  iptype "systemcsink";    // type of block
+  ipparm "var=var2";       // channel name specified in SystemC code 
+}
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=syscarmdriver";
+}
+
+ipblock fromarm(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm";
+  ipparm "address=0x80000000";
+}
+
+ipblock toarm(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm";
+  ipparm "address=0x80000004";
+}
+
+dp connect1 {
+  sig d : ns(32);
+  use fromsystemc(d);
+  use toarm(d);
+}
+
+dp connect2 {
+  sig d : ns(32); 
+  use tosystemc(d);
+  use fromarm(d);
+}
+
+dp top {
+  use myarm;
+  use connect1;
+  use connect2;
+}
+
+system S {
+  top;
+}

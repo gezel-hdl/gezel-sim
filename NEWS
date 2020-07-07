@@ -1,0 +1,229 @@
+Patch for 2.2 by Tim Watson
+
+
+Jan 11 2008 - release gezel 2.3
+
+  New features
+     - Support for Xilinx /EDK (FSL, memory-mapped register, 
+		OPB/FIFO, OPB memory-bus)
+
+Dec 18 2006 - release gezel 2.2
+
+  New features
+     - FSL cosimulation interface for Simit-ARM
+     - Improved toggle counting
+     - Updated Wiki documentation to replace PDF documentation
+     - New picoblaze core to replace old picosystem
+
+Jun 27 2006 - release gezel 2.1
+
+  New features
+     - Shared-memory interfaces for ARM and 8051
+       This version interfaces to a new (upcoming) Simit-ARM
+     - Special function units for ARM
+     - Additional examples
+     - Bootable CDROM with all tools pre-installed available
+
+Nov 15 2005 - release gezel 2.0
+
+   New features
+     - Significantly simplified the cosimulator
+       A single cosimulator (gplatform) now supports ARM, 8051, Picoblaze
+     - New website at http://rijndael.ece.vt.edu/gezel2
+     - Split package in simulation and code generation
+     - Dynamic-link libraries for ipblocks
+     - Documentation/Language Ref/Examples are now in a wiki system
+       For future releases, wiki will be updated
+     - New keyword 'always' for default datapath instructions
+
+   Bug fixes:
+     - Several bug fixes in simulator/ code generator
+     - Bug report contributors are:
+              Jorgen Steensgaard-Madsen, DTU
+              Elke Demulder, KUL
+              Kazuo Sakiyama, KUL
+              Jarek Poplavski and Ole Krarup, DTU
+
+   Other notes:
+     - Directory structure was reorganized:: fdlsim, fdlvhd move to a
+       'standalone' subdir. The gezel kernel remains in the 'gezel'
+       subdir.
+     - glbMPZAllocator was removed 
+     - Exampels have been upgraded, introduced recursive 'make'
+       in test directory
+     - 'system' will be deprecated (use structural hierarchy)
+     - Features of armcosim/armzilla/gezel51 will be integrated into
+       a single 'platform' cosimulator, gplatform.
+       armcosim, armzilla and gezel51 will be deprecated.
+     - There are known bugs.
+       See TODO for a list of open issues
+
+Apr 21 2005 - release gezel 1.7
+
+   Bug fixes:
+     - ram ipblock now has the same read-behavior as xilinx' Virtex
+       blockram (i.e., once clock cycle after providing address).
+     - in 'ipparm' parameter, whitespace is now supported
+       (e.g. ipparm "size = 128" as opposed to "size=128")
+
+   New features:
+     - JAVA cosimulation interface
+     - Atmel AVR cosimulation interface (based on Avrora ISS)
+     - Platform simulator for ARM/8051 MPSOC
+     - 'fdlsim file -1' will simulate forever
+     - support for VCD file generation (by Herwin Chan)
+     - shared & static linking, libtool packaging
+     - updated manual
+     - shared memory for armcosim (see below)
+
+   Other notes:
+     - Directory structure was reorganized:: fdlsim, fdlvhd move to a
+       'standalone' subdir. The gezel kernel remains in the 'gezel'
+       subdir.
+     - glbMPZAllocator was removed 
+     - Exampels have been upgraded, introduced recursive 'make'
+       in test directory
+     - 'system' will be deprecated (use structural hierarchy)
+     - Features of armcosim/armzilla/gezel51 will be integrated into
+       a single 'platform' cosimulator, gplatform.
+       armcosim, armzilla and gezel51 will be deprecated.
+     - There are known bugs.
+       See TODO for a list of open issues
+
+Jan 20 2004 - release gezel 1.6
+
+   Bug Fixes:
+       - $dp in cloned datapath now $displays correct name
+       - fixed erroneuous vhdl when reading outputs of dp
+       - improved error/warning reporting during parsing
+
+   New features:
+       - Profiling of operations & toggle counting
+       - New ipblock 'filesource' reads stimuli from file
+       - New ipblock 'ramprobe' queries ram ipblock from ISS
+       - updated manual
+
+Sep 16 2004 - release gezel 1.5
+
+   Bug Fixes:
+       - combinatorial loop using ipblock now detect
+       - ipblocks can be hierarchically included
+
+   New features:
+       - 8051 cosimulation
+       - shared-memory model for armzilla
+       - -d flag for armcosim
+       - updated manual
+       - pong example: added cycle counter
+
+Apr 20 2004 - release gezel 1.4
+
+   Bug Fixes:
+       - lookup tables definitions can now contain negative values
+       - out-of-range address in RAM is intercepted properly
+       - upgraded ipdtu library blocks (DTU)
+       - VHDL: correct default assignm. with structural hierarhcy
+
+   New features:
+       - A user manual with examples and how-to
+       - quoted strings can be chained
+         e.g. $display("a " "long string");
+         The maximum string length is 1024
+
+Mar 19 2004 - release gezel 1.3e
+
+   Bug Fixes:
+       - warning issued when ioval[x]->slong() looses precision
+       - signed/unsigned conversion in assignment operation
+       - order of ipparm in ram ipblock
+       - VHDL Codegen: minor fixes
+       - lexer: adjust linecount reporting for DOS systems
+
+   New features:
+       - new ipblocks (ijvm and rom) contributed from the DTU project
+       - example of the use of ram ipblock in test/gezel
+
+
+Mar 09 2004 - release gezel 1.3d
+
+   Bug Fixes:
+       - Segmentation fault on unexpected end-of-file removed
+       - VHDL code gen: various fixes in FSM model
+       - Full support for Recursive Hierarchy
+         ('use' within 'use' within 'use' ..)
+
+   New features:
+       - Assignment of module input signals generates parsing error
+       - Optional active-low reset in generated VHDL code
+       - PONG multiprocessor added in test/armzilla examples
+         See test/armzilla/pong/README
+
+Feb 05 2004 - release gezel 1.3c
+
+   Bug Fixes:
+       - Cloning of FSMD fixed
+       - VHDL code gen: fixes in 
+              FSM process sensitivity list, 
+              register default assignment, 
+              concatenation operator,
+              long sensitivity lists
+       - Type of bit slices (like a[5]) fixed
+
+   New features
+       - Synchronous reset in VHDL
+       - Selectable name for clock/reset signal in VHDL
+       - Source code of VHDL generator reorganized
+
+Jan 23 2004 - release gezel 1.3b
+
+   Bug Fixes:
+        - coredump of fdlsim/fdlvhd when reading standard-input
+        - VHDL correctly checks state transition conditions
+
+   New features:
+        - $trace keyword extended to sfg for the creation of VHDL stimuli
+          (e.g. reg k : ns(5); $trace(k, "kvalues.txt"); collects all values
+          of k in a file kvalues.txt)
+
+Jan 08 2004 - release gezel 1.3
+
+   New features:
+        - ARMZILLA Multiprocessor Simulator
+        - Context-sensitive Error reporting during parsing
+        - Debug report from VHDL code generator
+        - $trace keyword for FSM tracing
+        - Tracer-ipblocks for stimuli generation/recording
+
+   Improvements:
+        - Support for the new SimIT-ARM 2.0 simulator
+        - Additional test examples for armcosim and armzilla
+        - fdlsim/fdlvhd accept stdin
+
+Nov 28 2003 - release gezel 1.2
+
+   New features:
+        - Debug trace facility
+        - SystemC 2.0.1 cosimulation interface
+        - Documentation directory with Language Reference Manual
+
+Nov 03 2003 - release gezel 1.1c
+
+   Maintenance
+        - Fixed bug in '<' operator
+        - Fixed packaging (VHD support, SimIt-ARM patch)
+        - Added new examples
+
+Oct 16 2003 - release gezel 1.1b
+
+   Maintenance
+        - Support for controller cloning
+        - Fixed packaging
+
+Sep 16 2003 - release gezel 1.1
+
+   New features:
+	- Improved Simulation speed
+	- Cosimulation with StrongARM
+	- Code generation to VHDL
+
+May 24 2003 - release fdlsim 1.0

@@ -1,0 +1,40 @@
+// 5-bit LFSR
+// Copyright 2005 Patrick Schaumont (schaum@ee.ucla.edu)
+// $Id: lfsr.fdl,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
+
+dp lfsr(in  seed : ns(5);
+        in  load : ns(1);
+        out b    : ns(1)) {
+  reg shft : ns(5);
+  sig shft_new : ns(5);
+  always {
+    shft_new = (shft << 1) | (shft[1] ^ shft[4]);
+    shft = load ? seed : shft_new;
+    b    = shft[4];
+  }
+}
+
+dp lfsr_tb(out seed : ns(5);
+           out load : ns(1);
+           in  b    : ns(1)) {
+   sfg init { seed = 0x1F; load = 1; }
+   sfg run  { seed = 0; load = 0;    }
+   sfg show { $display("b= ", b);    }
+}
+fsm hlfsr_tb(lfsr_tb) {
+  initial s0;
+  state s1;
+  @s0 (init) -> s1;
+  @s1 (run, show) -> s1;
+}
+
+dp top {
+  sig seed : ns(5);
+  sig load, b : ns(1);
+  use lfsr(seed, load, b);
+  use lfsr_tb(seed, load, b);
+}
+
+system S {
+  top;
+}

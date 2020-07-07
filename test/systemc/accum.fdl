@@ -1,0 +1,26 @@
+// Example of Gezel/SystemC cosimulation Interface
+// $Id: accum.fdl,v 1.1.1.1 2005/07/14 17:32:46 schaum Exp $
+
+ipblock fromsystemc(out data : ns(32)) {
+  iptype "systemcsource";  // type of block
+  ipparm "var=var1";       // channel name specified in SystemC code
+}
+
+ipblock tosystemc(in data : ns(32)) {
+  iptype "systemcsink";    // type of block
+  ipparm "var=var2";       // channel name specified in SystemC code 
+}
+
+dp acc(in d : ns(32); out o : ns(32)) {
+  reg k : ns(32);
+  always {
+    k = d + k; // accumulate input
+    o = d + k;
+  }
+}
+
+system S {
+  fromsystemc(a);
+  acc(a,o);
+  tosystemc(o);
+}

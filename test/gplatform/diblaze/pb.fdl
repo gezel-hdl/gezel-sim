@@ -1,0 +1,107 @@
+ipblock mypico_A (
+              out port_id : ns(8);
+              out write_strobe : ns(1);
+              out read_strobe : ns(1);
+              out out_port : ns(8);
+              in  in_port : ns(8);
+              in  interrupt : ns(1);
+              out interrupt_ack : ns(1);
+              in  reset : ns(1);
+              in  clk : ns(1)) {
+  iptype "picoblaze";
+  ipparm "exec=SENDER.DEC";  
+}
+
+ipblock mypico_B (
+              out port_id : ns(8);
+              out write_strobe : ns(1);
+              out read_strobe : ns(1);
+              out out_port : ns(8);
+              in  in_port : ns(8);
+              in  interrupt : ns(1);
+              out interrupt_ack : ns(1);
+              in  reset : ns(1);
+              in  clk : ns(1)) {
+  iptype "picoblaze";
+  ipparm "exec=RECEIVER.DEC";  
+}
+
+dp mappedreg_60(in  d   : ns(8);
+                in  adr : ns(8);
+                in  ws  : ns(1);
+                out do  : ns(8)) {
+  reg r : ns(8);
+  reg f : ns(1);
+  always {
+    f  = ws;
+    r  = ws ? ((adr == 0x60) ? d : r) : r;
+    do = r;
+  }
+  sfg show {
+    $display($cycle, ": ", $dp, " ", r);
+  }
+  sfg idle { }
+}
+fsm f_mappedreg_60(mappedreg_60) {
+  initial s0;
+  @s0 if (f) then (show) -> s0;
+             else (idle) -> s0;
+}
+
+dp mappedreg_60_b : mappedreg_60 
+
+dp top {
+
+  /**************************************
+   * Picoblaze "A" ports
+   **************************************/
+  sig pbA_port_id           : ns(8);    // address
+  sig pbA_ws, pbA_rs        : ns(1);    // read, write strobes
+  sig pbA_output, pbA_input : ns(8);    // output, input ports
+  sig pbA_int, pbA_int_ack  : ns(1);    // interrupt, and interrupt ack port
+  sig pbA_rst, pbA_clk      : ns(1);    // reset and clk ports (not used in GEZEL, but
+                                        //   needed to correctly translated to VHDL)
+
+  use mypico_A (pbA_port_id, pbA_ws, pbA_rs,
+                pbA_output, pbA_input,
+                pbA_int, pbA_int_ack,
+                pbA_rst, pbA_clk);
+
+  /**************************************
+   * Picoblaze "B" ports
+   **************************************/
+  sig pbB_port_id           : ns(8);    // address
+  sig pbB_ws, pbB_rs        : ns(1);    // read, write strobes
+  sig pbB_output, pbB_input : ns(8);    // output, input ports
+  sig pbB_int, pbB_int_ack  : ns(1);    // interrupt, and interrupt ack port
+  sig pbB_rst, pbB_clk      : ns(1);    // reset and clk ports (not used in GEZEL, but
+                                        //   needed to correctly translated to VHDL)
+
+  use mypico_B (pbB_port_id, pbB_ws, pbB_rs,
+                pbB_output, pbB_input,
+                pbB_int, pbB_int_ack,
+                pbB_rst, pbB_clk);
+
+  sig pbA_to_pbB : ns(8);
+  sig pbB_to_pbA : ns(8);
+
+  /**************************************
+   * Memory mapped registers
+   **************************************/
+  use mappedreg_60  (pbA_output, pbA_port_id, pbA_ws, pbA_to_pbB);
+  use mappedreg_60_b(pbB_output, pbB_port_id, pbB_ws, pbB_to_pbA);
+
+  always {
+    pbB_input = pbA_to_pbB;
+    pbA_input = pbB_to_pbA;
+    pbA_int = pbB_int = 0;    // not using interrupts
+
+    // The following "clk" and "rst" signals are not used in the
+    // GEZEL simulation, so we just set them to a constant value
+    pbA_rst = pbB_rst = pbA_clk = pbB_clk = 0;
+  }
+}
+
+system S {
+  top;
+}

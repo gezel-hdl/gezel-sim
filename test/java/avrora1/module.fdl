@@ -1,0 +1,69 @@
+// Copyright (c) 2005 Patrick Schaumont
+// University of California at Los Angeles
+// $Id: module.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+
+ipblock PA0(out data : ns(1)) {
+  iptype "javasource";
+  ipparm "var=PA0";
+}
+
+ipblock PA1(out data : ns(1)) {
+  iptype "javasource";
+  ipparm "var=PA1";
+}
+
+ipblock PA2(in data : ns(1)) {
+  iptype "javasink";
+  ipparm "var=PA2";
+}
+
+ipblock PA3(in data : ns(1)) {
+  iptype "javasink";
+  ipparm "var=PA3";
+}
+
+dp ser2par(in   d   : ns(1); 
+	   in   c   : ns(1); 
+	   out do   : ns(8);
+           out busy : ns(1)) {
+  reg c_r, d_r, edge  : ns(1);
+  reg buf             : ns(8);
+  reg bits            : ns(4);
+  sfg init { bits = 8; buf = 0; }
+  sfg run  { busy = 1;
+             c_r = c; 
+             d_r = d;
+	     do = buf; 
+	     edge = c & (c ^ c_r); // $display($cycle); 
+           }
+  sfg abit { buf = (buf << 1) | d_r;
+             bits = bits - 1;
+	     $display("bits ", bits, " buf ", buf);
+           }
+  sfg end  { $display("Received data ", buf);
+             busy = 0;
+             c_r = c; 
+             d_r = d;
+	     do = buf; 
+	     edge = c & (c ^ c_r); // $display($cycle); 
+           }
+} 
+fsm h_ser2par(ser2par) {
+  initial s00;
+  state   s0, s1, s2;
+  @s00 (run, init)               -> s0;
+  @s0 if (edge) then (abit, run) -> s1;
+                else (run)       -> s0;
+  @s1 if (bits  != 0) then (run) -> s0;
+                else (end)       -> s2;
+  @s2 if (edge) then (run, init) -> s0;
+                else (end)       -> s2;
+}
+
+system S {
+  ser2par(d, c, o, busy);
+  PA0(d);
+  PA1(c);
+  PA2(busy);
+}
+

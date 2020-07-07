@@ -1,0 +1,77 @@
+// Copyright (C) 2005 Patrick Schaumont (schaum@ee.ucla.edu)                   
+// University of California at Los Angeles
+// $Id: mpsoc.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+
+ipblock my8051a {
+  iptype "i8051system";
+  ipparm "exec=slave51.ihx";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock my8051a_P0(in data : ns(8)) {
+  iptype "i8051systemsink";   ipparm "core=my8051a"; ipparm "port=P0"; 
+}
+
+ipblock my8051a_P1(out data : ns(8)) {
+  iptype "i8051systemsource"; ipparm "core=my8051a"; ipparm "port=P1"; 
+}
+
+ipblock my8051a_P2(in data : ns(8)) {
+  iptype "i8051systemsink";   ipparm "core=my8051a"; ipparm "port=P2"; 
+}
+
+ipblock my8051a_P3(out data : ns(8)) {
+  iptype "i8051systemsource"; ipparm "core=my8051a"; ipparm "port=P3"; 
+}
+
+ipblock myarm {
+  iptype "armsystem";
+  ipparm "exec=drivearm";
+  ipparm "verbose=0";
+  ipparm "period=1";
+}
+
+ipblock myarm_P0(in data : ns(32)) {
+  iptype "armsystemsink";      ipparm "core=myarm";   ipparm "address=0x80000000";
+}
+
+ipblock myarm_P1(out data : ns(32)) {
+  iptype "armsystemsource";    ipparm "core=myarm";   ipparm "address=0x80000004";
+}
+
+ipblock myarm_P2(in data : ns(32)) {
+  iptype "armsystemsink";      ipparm "core=myarm";   ipparm "address=0x80000008";
+}
+
+ipblock myarm_P3(out data : ns(32)) {
+  iptype "armsystemsource";    ipparm "core=myarm";   ipparm "address=0x8000000C";
+}
+
+dp sys {
+  sig d0a, d1a, d2a, d3a : ns(8);
+  sig d0,  d1,  d2,  d3  : ns(32);
+
+  use my8051a;
+  use my8051a_P0 (d0a);  // in
+  use my8051a_P1 (d1a);  // out
+  use my8051a_P2 (d2a);  // in
+  use my8051a_P3 (d3a);  // out
+
+  use myarm;
+  use myarm_P0   (d0);
+  use myarm_P1   (d1);
+  use myarm_P2   (d2);
+  use myarm_P3   (d3);
+
+  always {
+     d0a = d1;
+     d0  = d1a;
+     d2a = d3;
+     d2  = d3a;
+  }
+}
+
+system S {
+  sys;
+}

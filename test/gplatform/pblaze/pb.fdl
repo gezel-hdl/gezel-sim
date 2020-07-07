@@ -1,0 +1,64 @@
+ipblock mypico (out port_id : ns(8);
+                out write_strobe : ns(1);
+                out read_strobe : ns(1);
+                out out_port : ns(8);
+                in  in_port : ns(8);
+                in  interrupt : ns(1);
+                out interrupt_ack : ns(1);
+                in  reset : ns(1);
+                in  clk : ns(1)) {
+    iptype "picoblaze";
+    ipparm "exec=SMALL.DEC";
+    ipparm "verbose=0";
+}
+
+dp shw(in a    : ns(8); 
+       in addr : ns(8); 
+       in ws   : ns(1)) {
+  reg k : ns(8);
+  always {
+    k = a;
+    $display("* ", $cycle, " P->G: V = ", a, " addr = ", addr, " ws = ", ws);
+  }
+}
+
+dp cnt(out a   : ns(8); 
+       in addr : ns(8); 
+       in rs   : ns(1)) {
+  reg c : ns(8);
+  always {
+   c = c + 1;
+   a = c;
+   // $display("* ", $cycle, " G->P: V = ", a, " addr = ", addr, " rs = ", rs);
+  }
+}
+
+dp top {
+  sig port_id, out_port, in_port : ns(8);
+  sig write_strobe, read_strobe, interrupt, interrupt_ack : ns(1);
+  sig reset, clk : ns(1);
+
+  use mypico(port_id,      
+             write_strobe, 
+             read_strobe,  
+             out_port,     
+             in_port,      
+             interrupt,    
+             interrupt_ack,
+             reset,
+             clk);
+
+  use cnt(in_port,  port_id, read_strobe);
+  use shw(out_port, port_id, write_strobe);
+
+  always {
+    interrupt = 0;
+    reset = 0;
+    clk   = 0;
+  }
+}
+
+system S {
+  top;
+}
+

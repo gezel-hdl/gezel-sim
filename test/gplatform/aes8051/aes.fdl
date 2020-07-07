@@ -1,0 +1,463 @@
+// port-mapped aes coprocessor for i8051
+// Copyright 2004 Patrick Schaumont 
+// $Id: aes.fdl,v 1.1.1.1 2005/07/14 17:32:45 schaum Exp $
+
+//-- these are the cosimulation interfaces
+
+ipblock my8051 {
+  iptype "i8051system";
+  ipparm "exec=driver.ihx";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock my8051_ins(out data : ns(8)) {
+  iptype "i8051systemsource";
+  ipparm "core=my8051";
+  ipparm "port=P0";
+}
+
+ipblock my8051_datain(out data : ns(8)) {
+  iptype "i8051systemsource";
+  ipparm "core=my8051";
+  ipparm "port=P1";
+}
+
+ipblock my8051_dataout(in data : ns(8)) {
+  iptype "i8051systemsink";
+  ipparm "core=my8051";
+  ipparm "port=P2";
+}
+
+//---  this is the aes coprocessor
+
+dp sbox_us00(in din : ns(8); out dout : ns(8)) {
+
+  lookup T : ns(8) = {
+   99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118, 
+  202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 
+  183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21, 
+    4, 199,  35, 195,  24, 150,   5, 154,   7,  18, 128, 226, 235,  39, 178, 117, 
+    9, 131,  44,  26,  27, 110,  90, 160,  82,  59, 214, 179,  41, 227,  47, 132, 
+   83, 209,   0, 237,  32, 252, 177,  91, 106, 203, 190,  57,  74,  76,  88, 207, 
+  208, 239, 170, 251,  67,  77,  51, 133,  69, 249,   2, 127,  80,  60, 159, 168, 
+   81, 163,  64, 143, 146, 157,  56, 245, 188, 182, 218,  33,  16, 255, 243, 210, 
+  205,  12,  19, 236,  95, 151,  68,  23, 196, 167, 126,  61, 100,  93,  25, 115, 
+   96, 129,  79, 220,  34,  42, 144, 136,  70, 238, 184,  20, 222,  94,  11, 219, 
+  224,  50,  58,  10,  73,   6,  36,  92, 194, 211, 172,  98, 145, 149, 228, 121, 
+  231, 200,  55, 109, 141, 213,  78, 169, 108,  86, 244, 234, 101, 122, 174,   8, 
+  186, 120,  37,  46,  28, 166, 180, 198, 232, 221, 116,  31,  75, 189, 139, 138, 
+  112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158, 
+  225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223, 
+  140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22};
+
+  always {
+    dout = T(din);
+  }
+}
+
+dp sbox_us01 : sbox_us00 
+dp sbox_us02 : sbox_us00 
+dp sbox_us03 : sbox_us00 
+dp sbox_us10 : sbox_us00 
+dp sbox_us11 : sbox_us00 
+dp sbox_us12 : sbox_us00 
+dp sbox_us13 : sbox_us00 
+dp sbox_us20 : sbox_us00 
+dp sbox_us21 : sbox_us00 
+dp sbox_us22 : sbox_us00 
+dp sbox_us23 : sbox_us00 
+dp sbox_us30 : sbox_us00 
+dp sbox_us31 : sbox_us00 
+dp sbox_us32 : sbox_us00 
+dp sbox_us33 : sbox_us00 
+
+dp sbox_u0   : sbox_us00  
+dp sbox_u1   : sbox_us00  
+dp sbox_u2   : sbox_us00  
+dp sbox_u3   : sbox_us00  
+
+dp aes_rcon(in  kld : ns(1);
+            out res : ns(32)) {
+
+  reg rcnt      : ns(4);
+  sig rcnt_next : ns(4);
+
+  always {
+    res  = kld         ? 0x01000000 : 
+           (rcnt == 0) ? 0x01000000 :
+           (rcnt == 1) ? 0x02000000 :
+           (rcnt == 2) ? 0x04000000 :
+           (rcnt == 3) ? 0x08000000 :
+           (rcnt == 4) ? 0x10000000 :
+           (rcnt == 5) ? 0x20000000 :
+           (rcnt == 6) ? 0x40000000 :
+           (rcnt == 7) ? 0x80000000 :
+           (rcnt == 8) ? 0x1b000000 :
+           (rcnt == 9) ? 0x36000000 :
+                         0x00000000 ;
+
+//    $display("RK ", res);
+    rcnt_next = rcnt + 1;
+    rcnt      = kld ? 0 : ((rcnt == 10) ? rcnt : rcnt_next);
+  }
+}
+
+
+dp aes_key_expand_128(in kld   :   ns(1); 
+		      in key   : ns(128); 
+                      out wo_0 :  ns(32);
+                      out wo_1 :  ns(32);
+                      out wo_2 :  ns(32);
+                      out wo_3 :  ns(32)) {
+
+   reg w3, w2, w1, w0                 : ns(32);
+   sig tmp_w0, tmp_w1, tmp_w2, tmp_w3 : ns(8);
+   sig subword                        : ns(32);
+   sig subword0                       : ns (8);
+   sig subword1                       : ns (8);
+   sig subword2                       : ns (8);
+   sig subword3                       : ns (8);
+   sig rcon                           : ns(32);
+
+   use sbox_u0 (tmp_w3, subword3); // should be able to use indices here
+   use sbox_u1 (tmp_w2, subword2);
+   use sbox_u2 (tmp_w1, subword1);
+   use sbox_u3 (tmp_w0, subword0);
+   use aes_rcon(kld, rcon);
+
+   always {
+     subword = (subword3 << 24) | (subword2 << 16) | (subword1 << 8) | subword0;
+
+     w0 = kld ? key[127: 96] : (rcon ? (w0 ^ subword ^ rcon) : w0);
+     w1 = kld ? key[ 95: 64] : (rcon ? (w0 ^ w1 ^ subword ^ rcon) : w1);
+     w2 = kld ? key[ 63: 32] : (rcon ? (w0 ^ w2 ^ w1 ^ subword ^ rcon) : w2);
+     w3 = kld ? key[ 31:  0] : (rcon ? (w0 ^ w3 ^ w2 ^ w1 ^ subword ^ rcon) : w3);
+     tmp_w0 = w3[31:24];
+     tmp_w1 = w3[ 7: 0];
+     tmp_w2 = w3[15: 8];
+     tmp_w3 = w3[23:16];
+//	$display("MMM ", rcon);
+     wo_0   = w0;
+     wo_1   = w1;
+     wo_2   = w2;
+     wo_3   = w3;
+//     $display("round key ", wo_0, wo_1, wo_2, wo_3);
+   }
+}
+
+dp aes_mix_col_0(in  s0     : ns(8);
+                 in  s1     : ns(8);
+                 in  s2     : ns(8);
+                 in  s3     : ns(8);
+	         out s0_o : ns(8);
+                 out s1_o : ns(8);
+                 out s2_o : ns(8);
+                 out s3_o : ns(8)) {
+
+   sig fpr : ns(8);
+   always {
+    fpr = 0x1b;
+    s0_o = (s0 << 1) ^ ((tc(1)) s0[7] & fpr) ^ (s1 << 1) ^ ((tc(1)) s1[7] & fpr) ^ s1 ^ s2 ^ s3;
+    s1_o = (s1 << 1) ^ ((tc(1)) s1[7] & fpr) ^ (s2 << 1) ^ ((tc(1)) s2[7] & fpr) ^ s0 ^ s2 ^ s3;
+    s2_o = (s2 << 1) ^ ((tc(1)) s2[7] & fpr) ^ (s3 << 1) ^ ((tc(1)) s3[7] & fpr) ^ s0 ^ s1 ^ s3;
+    s3_o = (s3 << 1) ^ ((tc(1)) s3[7] & fpr) ^ (s0 << 1) ^ ((tc(1)) s0[7] & fpr) ^ s0 ^ s1 ^ s2;
+   }
+}
+
+dp aes_mix_col_1 : aes_mix_col_0  
+dp aes_mix_col_2 : aes_mix_col_0  
+dp aes_mix_col_3 : aes_mix_col_0  
+
+dp aes_top(in  rst      :   ns(1);
+           in  ld       :   ns(1); 
+           out done     :   ns(1); 
+           in  key      : ns(128);
+           in  text_in  : ns(128);
+           out text_out : ns(128)) {
+
+  sig w0, w1, w2, w3 : ns(32);
+  reg text_in_r  : ns(128);
+  reg text_out_r : ns(128);
+  reg ld_r : ns(1);
+  reg sa00, sa01, sa02, sa03 : ns(8);
+  reg sa10, sa11, sa12, sa13 : ns(8);
+  reg sa20, sa21, sa22, sa23 : ns(8);
+  reg sa30, sa31, sa32, sa33 : ns(8);
+  sig sa00_next, sa01_next, sa02_next, sa03_next : ns(8);
+  sig sa10_next, sa11_next, sa12_next, sa13_next : ns(8);
+  sig sa20_next, sa21_next, sa22_next, sa23_next : ns(8);
+  sig sa30_next, sa31_next, sa32_next, sa33_next : ns(8);
+  sig sa00_sub, sa01_sub, sa02_sub, sa03_sub : ns(8);
+  sig sa10_sub, sa11_sub, sa12_sub, sa13_sub : ns(8);
+  sig sa20_sub, sa21_sub, sa22_sub, sa23_sub : ns(8);
+  sig sa30_sub, sa31_sub, sa32_sub, sa33_sub : ns(8);
+  sig sa00_sr, sa01_sr, sa02_sr, sa03_sr : ns(8);
+  sig sa10_sr, sa11_sr, sa12_sr, sa13_sr : ns(8);
+  sig sa20_sr, sa21_sr, sa22_sr, sa23_sr : ns(8);
+  sig sa30_sr, sa31_sr, sa32_sr, sa33_sr : ns(8);
+  sig sa00_mc, sa01_mc, sa02_mc, sa03_mc : ns(8);
+  sig sa10_mc, sa11_mc, sa12_mc, sa13_mc : ns(8);
+  sig sa20_mc, sa21_mc, sa22_mc, sa23_mc : ns(8);
+  sig sa30_mc, sa31_mc, sa32_mc, sa33_mc : ns(8);
+  sig text_out00, text_out01, text_out02, text_out03 : ns(8);
+  sig text_out04, text_out05, text_out06, text_out07 : ns(8);
+  sig text_out08, text_out09, text_out10, text_out11 : ns(8);
+  sig text_out12, text_out13, text_out14, text_out15 : ns(8);
+
+  reg dcnt : ns(4);
+
+  use aes_mix_col_0(sa00_sr,sa10_sr,sa20_sr,sa30_sr,sa00_mc,sa10_mc,sa20_mc,sa30_mc);
+  use aes_mix_col_1(sa01_sr,sa11_sr,sa21_sr,sa31_sr,sa01_mc,sa11_mc,sa21_mc,sa31_mc);
+  use aes_mix_col_2(sa02_sr,sa12_sr,sa22_sr,sa32_sr,sa02_mc,sa12_mc,sa22_mc,sa32_mc);
+  use aes_mix_col_3(sa03_sr,sa13_sr,sa23_sr,sa33_sr,sa03_mc,sa13_mc,sa23_mc,sa33_mc);
+  use sbox_us00(sa00,sa00_sub);
+  use sbox_us01(sa01,sa01_sub);
+  use sbox_us02(sa02,sa02_sub);
+  use sbox_us03(sa03,sa03_sub);
+  use sbox_us10(sa10,sa10_sub);
+  use sbox_us11(sa11,sa11_sub);
+  use sbox_us12(sa12,sa12_sub);
+  use sbox_us13(sa13,sa13_sub);
+  use sbox_us20(sa20,sa20_sub);
+  use sbox_us21(sa21,sa21_sub);
+  use sbox_us22(sa22,sa22_sub);
+  use sbox_us23(sa23,sa23_sub);
+  use sbox_us30(sa30,sa30_sub);
+  use sbox_us31(sa31,sa31_sub);
+  use sbox_us32(sa32,sa32_sub);
+  use sbox_us33(sa33,sa33_sub);
+  use aes_key_expand_128(ld, key, w0, w1, w2, w3);
+
+  always {
+
+//     $display("rst ", rst, " ld ", ld, " key ", key, " text_in ", text_in, " done ", done, " text_out ", text_out);
+
+     // control
+     dcnt = rst ? 0 : (ld ? 11 : (dcnt ? dcnt - 1 : dcnt));   
+     done = ~(dcnt[3] | dcnt[2] | dcnt[1]) & dcnt[0] & ~ld;
+     text_in_r = ld ? text_in : text_in_r;
+     //$display("-------------------------------- ", dcnt);
+     // $display("done ", done, " text_in_r ", text_in_r, " key ", key);
+     ld_r = ld;
+
+     // addroundkey
+     sa33 = ld_r ? text_in[  7:  0] ^ w3[ 7: 0] : (dcnt ? sa33_next : sa33);
+     sa23 = ld_r ? text_in[ 15:  8] ^ w3[15: 8] : (dcnt ? sa23_next : sa23);
+     sa13 = ld_r ? text_in[ 23: 16] ^ w3[23:16] : (dcnt ? sa13_next : sa13);
+     sa03 = ld_r ? text_in[ 31: 24] ^ w3[31:24] : (dcnt ? sa03_next : sa03);
+     sa32 = ld_r ? text_in[ 39: 32] ^ w2[ 7: 0] : (dcnt ? sa32_next : sa32);
+     sa22 = ld_r ? text_in[ 47: 40] ^ w2[15: 8] : (dcnt ? sa22_next : sa22);
+     sa12 = ld_r ? text_in[ 55: 48] ^ w2[23:16] : (dcnt ? sa12_next : sa12);
+     sa02 = ld_r ? text_in[ 63: 56] ^ w2[31:24] : (dcnt ? sa02_next : sa02);
+     sa31 = ld_r ? text_in[ 71: 64] ^ w1[ 7: 0] : (dcnt ? sa31_next : sa31);
+     sa21 = ld_r ? text_in[ 79: 72] ^ w1[15: 8] : (dcnt ? sa21_next : sa21);
+     sa11 = ld_r ? text_in[ 87: 80] ^ w1[23:16] : (dcnt ? sa11_next : sa11);
+     sa01 = ld_r ? text_in[ 95: 88] ^ w1[31:24] : (dcnt ? sa01_next : sa01);
+     sa30 = ld_r ? text_in[103:096] ^ w0[ 7: 0] : (dcnt ? sa30_next : sa30);
+     sa20 = ld_r ? text_in[111:104] ^ w0[15: 8] : (dcnt ? sa20_next : sa20);
+     sa10 = ld_r ? text_in[119:112] ^ w0[23:16] : (dcnt ? sa10_next : sa10);
+     sa00 = ld_r ? text_in[127:120] ^ w0[31:24] : (dcnt ? sa00_next : sa00);
+
+	      
+     // round permutations
+     sa00_sr = sa00_sub;
+     sa01_sr = sa01_sub;
+     sa02_sr = sa02_sub;
+     sa03_sr = sa03_sub;
+     sa10_sr = sa11_sub;
+     sa11_sr = sa12_sub;
+     sa12_sr = sa13_sub;
+     sa13_sr = sa10_sub;
+     sa20_sr = sa22_sub;
+     sa21_sr = sa23_sub;
+     sa22_sr = sa20_sub;
+     sa23_sr = sa21_sub;
+     sa30_sr = sa33_sub;
+     sa31_sr = sa30_sub;
+     sa32_sr = sa31_sub;
+     sa33_sr = sa32_sub;
+
+     // add roundkey
+     sa00_next = sa00_mc ^ w0[31:24];
+     sa01_next = sa01_mc ^ w1[31:24];
+     sa02_next = sa02_mc ^ w2[31:24];
+     sa03_next = sa03_mc ^ w3[31:24];
+     sa10_next = sa10_mc ^ w0[23:16];
+     sa11_next = sa11_mc ^ w1[23:16];
+     sa12_next = sa12_mc ^ w2[23:16];
+     sa13_next = sa13_mc ^ w3[23:16];
+     sa20_next = sa20_mc ^ w0[15: 8];
+     sa21_next = sa21_mc ^ w1[15: 8];
+     sa22_next = sa22_mc ^ w2[15: 8];
+     sa23_next = sa23_mc ^ w3[15: 8];
+     sa30_next = sa30_mc ^ w0[ 7: 0];
+     sa31_next = sa31_mc ^ w1[ 7: 0];
+     sa32_next = sa32_mc ^ w2[ 7: 0];
+     sa33_next = sa33_mc ^ w3[ 7: 0];
+
+     // final text output
+     text_out00 = sa00_sr ^ w0[31:24];
+     text_out01 = sa01_sr ^ w1[31:24];
+     text_out02 = sa02_sr ^ w2[31:24];
+     text_out03 = sa03_sr ^ w3[31:24];
+     text_out04 = sa10_sr ^ w0[23:16];
+     text_out05 = sa11_sr ^ w1[23:16];
+     text_out06 = sa12_sr ^ w2[23:16];
+     text_out07 = sa13_sr ^ w3[23:16];
+     text_out08 = sa20_sr ^ w0[15: 8];
+     text_out09 = sa21_sr ^ w1[15: 8];
+     text_out10 = sa22_sr ^ w2[15: 8];
+     text_out11 = sa23_sr ^ w3[15: 8];
+     text_out12 = sa30_sr ^ w0[ 7: 0];
+     text_out13 = sa31_sr ^ w1[ 7: 0];
+     text_out14 = sa32_sr ^ w2[ 7: 0];
+     text_out15 = sa33_sr ^ w3[ 7: 0];
+
+     text_out = (text_out00 << 120) |
+		(text_out01 <<  88) |
+		(text_out02 <<  56) |
+		(text_out03 <<  24) |
+		(text_out04 << 112) |
+		(text_out05 <<  80) |
+		(text_out06 <<  48) |
+		(text_out07 <<  16) |
+		(text_out08 << 104) |
+		(text_out09 <<  72) |
+		(text_out10 <<  40) |
+		(text_out11 <<   8) |
+		(text_out12 <<  96) |
+		(text_out13 <<  64) |
+		(text_out14 <<  32) |
+		(text_out15 <<   0);
+//  $display(done, " ", text_out);
+  }
+
+}
+
+dp aes_decoder(in   ins : ns(8);
+               in   din : ns(8); 
+               out dout : ns(8)) {
+  reg rst, ld, done             : ns(1);
+  reg key, text_in, text_out    : ns(128);
+  sig sigdone                   : ns(1);
+  sig sigtext_out               : ns(128);
+
+  reg wrkreg0, wrkreg1, wrkreg2, wrkreg3 : ns(8);
+  reg wrkreg4, wrkreg5, wrkreg6, wrkreg7 : ns(8);
+  reg wrkreg8, wrkreg9, wrkregA, wrkregB : ns(8);
+  reg wrkregC, wrkregD, wrkregE          : ns(8);
+
+  reg insreg                    : ns(8);
+  reg dinreg                    : ns(8);
+  reg doutreg                   : ns(8);
+
+  use aes_top(rst, ld, sigdone, key, text_in, sigtext_out);
+
+  sfg decode   { insreg = ins; 
+	         dinreg = din; 
+                 done = sigdone; 
+                 text_out = sigdone ? sigtext_out : text_out; }
+  sfg dout_0   { dout = 0;                }
+  sfg dout_t   { dout = doutreg; }
+  sfg dout_w   { dout = doutreg; } 
+  sfg aes_idle { rst = 0;  ld  = 0; }
+  sfg aes_rst  { rst = 1;  ld  = 0; }
+  sfg aes_ld   { rst = 0;  ld  = 1; 
+	         $display("cycle ", $cycle, ": start encryption");
+               }
+  sfg putword  { wrkreg0 = dinreg;   wrkreg1 = wrkreg0; wrkreg2 = wrkreg1; 
+                 wrkreg3 = wrkreg2;  wrkreg4 = wrkreg3; wrkreg5 = wrkreg4; 
+                 wrkreg6 = wrkreg5;  wrkreg7 = wrkreg6; wrkreg8 = wrkreg7; 
+                 wrkreg9 = wrkreg8;  wrkregA = wrkreg9; wrkregB = wrkregA; 
+                 wrkregC = wrkregB;  wrkregD = wrkregC; wrkregE = wrkregD; 
+               }
+  sfg setkey   { 
+                 $display("cycle ", $cycle, ": set key ", key);
+                 key     = wrkregE # wrkregD # wrkregC # wrkregB # wrkregA #
+                           wrkreg9 # wrkreg8 # wrkreg7 # wrkreg6 # wrkreg5 #
+                           wrkreg4 # wrkreg3 # wrkreg2 # wrkreg1 # wrkreg0 # din; 
+               }
+  sfg settext  { 
+                 $display("cycle ", $cycle, ": set text_in ", text_in);
+                 text_in = wrkregE # wrkregD # wrkregC # wrkregB # wrkregA #
+                           wrkreg9 # wrkreg8 # wrkreg7 # wrkreg6 # wrkreg5 #
+                           wrkreg4 # wrkreg3 # wrkreg2 # wrkreg1 # wrkreg0 # din; 
+               }
+  sfg gettext  { 
+                 $display("cycle ", $cycle, ": dout_first ", dout);
+	         dout    = text_out[127:120];
+	         doutreg = text_out[127:120];
+                 wrkreg0 = text_out[  7:  0];
+                 wrkreg1 = text_out[ 15:  8];
+		 wrkreg2 = text_out[ 23: 16];
+		 wrkreg3 = text_out[ 31: 24];
+		 wrkreg4 = text_out[ 39: 32];
+		 wrkreg5 = text_out[ 47: 40];
+		 wrkreg6 = text_out[ 55: 48];
+		 wrkreg7 = text_out[ 63: 56];
+		 wrkreg8 = text_out[ 71: 64];
+		 wrkreg9 = text_out[ 79: 72];
+		 wrkregA = text_out[ 87: 80];
+		 wrkregB = text_out[ 95: 88];
+		 wrkregC = text_out[103:096];
+		 wrkregD = text_out[111:104];
+		 wrkregE = text_out[119:112];
+                }
+   sfg getword  { 
+                 $display("cycle ", $cycle, ": dout_next  ", dout);
+                 wrkreg1 = wrkreg0; 
+		 wrkreg2 = wrkreg1;
+                 wrkreg3 = wrkreg2; 
+		 wrkreg4 = wrkreg3; 
+		 wrkreg5 = wrkreg4;
+                 wrkreg6 = wrkreg5; 
+		 wrkreg7 = wrkreg6; 
+		 wrkreg8 = wrkreg7;
+                 wrkreg9 = wrkreg8; 
+		 wrkregA = wrkreg9; 
+		 wrkregB = wrkregA;
+                 wrkregC = wrkregB; 
+		 wrkregD = wrkregC; 
+		 wrkregE = wrkregD;
+                 dout    = wrkregE;
+                 doutreg = wrkregE;
+                }
+}
+
+fsm faes_decoder(aes_decoder) {
+  initial s0;
+  state s1, s2, s3, s4, s5;
+  @s0 (decode, aes_idle, dout_0)                                     -> s1;
+  @s1 if (insreg == 1)      then (aes_rst,  decode, dout_0)          -> s2;
+      else if (insreg == 2) then (aes_idle, decode, putword, dout_0) -> s2;
+      else if (insreg == 3) then (aes_idle, decode, setkey,  dout_0) -> s2;
+      else if (insreg == 4) then (aes_idle, decode, settext, dout_0) -> s2;
+      else if (insreg == 5) then (aes_ld,   decode, dout_0)          -> s3;
+      else if (insreg == 6) then (aes_idle, decode, gettext)         -> s4;
+      else if (insreg == 7) then (aes_idle, decode, getword)         -> s5;
+      else (decode, aes_idle, dout_0)                                -> s1;
+  @s2 if (insreg == 0)      then (aes_idle, decode, dout_0)          -> s1;
+                            else (aes_idle, decode, dout_0)          -> s2;
+  @s3 if (done == 1)        then (aes_idle, decode, dout_0)          -> s2;
+                            else (aes_idle, decode, dout_0)          -> s3;
+  @s4 if (insreg == 0)      then (aes_idle, decode, dout_0)          -> s1;
+                            else (aes_idle, decode, dout_t)          -> s4;
+  @s5 if (insreg == 0)      then (aes_idle, decode, dout_0)          -> s1;
+                            else (aes_idle, decode, dout_w)          -> s5;
+}
+
+dp sys {
+  sig ins, din, dout : ns(8);
+
+  use my8051;
+  use my8051_ins(ins);
+  use my8051_datain(din);
+  use my8051_dataout(dout);
+  use aes_decoder(ins, din, dout);
+
+}
+
+system S {
+  sys;
+}

@@ -1,0 +1,39 @@
+ipblock myarm1 {
+  iptype "armsystem";
+  ipparm "exec=sender";
+  ipparm "period = 2";  // make writer run 2 times slower than system clock
+}
+
+ipblock myarm2 {
+  iptype "armsystem";
+  ipparm "exec=receiver";
+}
+
+ipblock channelsrc(out data : ns(32)) {
+  iptype "armsystemsource";
+  ipparm "core=myarm1";
+  ipparm "address=0x80000008";
+}
+
+ipblock channelsnk(in data : ns(32)) {
+  iptype "armsystemsink";
+  ipparm "core=myarm2";
+  ipparm "address=0x80000008";
+}
+
+dp network  {
+  reg buf : ns(32);
+  sig fromsender, toreceiver : ns(32);
+  use myarm1;
+  use myarm2;
+  use channelsrc(fromsender);
+  use channelsnk(toreceiver);
+  always {
+      buf = fromsender;
+      toreceiver = buf;
+  }
+}
+
+system S {
+  network;
+}

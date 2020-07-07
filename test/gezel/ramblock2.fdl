@@ -1,0 +1,30 @@
+ipblock M(in address : ns(5);
+          in wr,rd   : ns(1);  
+          in idata   : ns(36);
+          out odata  : ns(36)) {
+  iptype "ram";
+  ipparm "wl=8";  
+  ipparm "size=36";  
+}
+
+dp rwmod {
+  reg ar   : ns(5);
+  sig a    : ns(5);
+  sig i, o : ns(36); 
+  sig r, w : ns(1);
+
+  use M(a, w, r, i, o);
+
+  always {
+    ar = ar + 1;
+    a  = ar;
+    i  = o  + 1;
+    r  = 1;
+    w  = 1;
+    $display("a ", a, " o ", o, " i ", i);
+   }
+}
+ 
+system S {
+  rwmod;
+}  
