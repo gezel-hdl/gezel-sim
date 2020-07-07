@@ -19,217 +19,7 @@
 //--------------------------------------------------------------
 
 #include "xilinxitf.h"
-
-// FSL slave interface
-// ipblock fsl1(in  read    : ns(1);
-//              out data    : ns(32);
-//              out control : ns(1);
-//              out exists  : ns(1)) {
-//    iptype "xilinx_fsl_slave";
-//    ipparm "core=arm1";  // strongarm core
-//    ipparm "slavewrite=0x80000000";
-//    ipparm "slavestatus=0x80000008";
-// }
-
-xilinx_fsl_slave::xilinx_fsl_slave(char *name) : 
-  aipblock(name), 
-  interfacewritten(false),
-  tokenavailable(false) {
-  hook     = 0;
-  write_deviceid = 0;
-  status_deviceid = 0;
-}
-
-xilinx_fsl_slave::~xilinx_fsl_slave() {}
-
-void xilinx_fsl_slave::setparm(char *name) {
-  gval *v = make_gval(32,0);
-  char *pname;
-  
-  if ((pname = matchparm(name, "core"))) {
-    if ((hook = findcore(pname)))
-      return;
-    cerr << "xilinx_fsl_slave: core " << pname << " not found\n";
-    exit(0);
-  } else if (matchparm(name, "slavewrite", *v)) {
-    if (hook) {
-      write_deviceid = hook->mem->register_addr(v->toulong()); 
-      register_ipblock(write_deviceid, this);
-    } else {
-      cerr << "xilinx_fsl_slave: set core parameter before selecting address\n";
-      exit(0);
-    }
-    return;
-  } else if (matchparm(name, "slavestatus", *v)) {
-    if (hook) {
-      status_deviceid = hook->mem->register_addr(v->toulong()); 
-      register_ipblock(status_deviceid, this);
-    } else {
-      cerr << "xilinx_fsl_slave: set core parameter before selecting address\n";
-      exit(0);
-    }
-    return;
-  }
-  cerr << "xilinx_fsl_slave: parameter " << name << " not understood\n";
-}
-
-void xilinx_fsl_slave::run() {
-  if (ioval[0]->toulong() == 1) 
-    tokenavailable = 0;
-  
-  if (tokenavailable)
-    ioval[3]->assignulong(1); // exists <- 1
-  else
-    ioval[3]->assignulong(0); // exists <- 0
-}
-
-bool xilinx_fsl_slave::checkterminal(int n, char *tname, aipblock::iodir d) {
-  switch (n) {
-  case 0:
-    return (isinput(d) && isname(tname, "read"));
-    break;
-  case 1:
-    return (isoutput(d) && isname(tname, "data"));
-    break;
-  case 2:
-    return (isoutput(d) && isname(tname, "control"));
-    break;
-  case 3:
-    return (isoutput(d) && isname(tname, "exists"));
-    break;
-  }
-  return false;
-}
-
-bool xilinx_fsl_slave::needsWakeupTest() {
-  bool v = interfacewritten;
-  interfacewritten = false;
-  return v;
-}
-
-bool xilinx_fsl_slave::cannotSleepTest() {
-  bool v = interfacewritten;
-  interfacewritten = false;
-  return v;
-}
-
-void xilinx_fsl_slave::write_device(int dev, unsigned long n) {
-  ioval[1]->assignulong((long) n);
-  ioval[2]->assignulong((long) 0);
-  interfacewritten = true;
-  tokenavailable = true;
-}
-
-unsigned long xilinx_fsl_slave::read_device(int deviceid) {
-  if (deviceid == status_deviceid) {
-    return ioval[0]->toulong();
-  }
-  return 0;
-}
-
-//--------------------------------------------------------------------
-
-// FSL master interface
-// ipblock fsl2(in  write   : ns(1);
-//              in  data    : ns(32);
-//              in  control : ns(1);
-//              out full   : ns(1)) {
-//    iptype "xilinx_fsl_master";
-//    ipparm "core=arm1";   // strongarm core
-//    ipparm "masterread=0x80000004";
-//    ipparm "masterstatus=0x80000008";
-// }
-
-xilinx_fsl_master::xilinx_fsl_master(char *name) : 
-  aipblock(name) {
-  hook     = 0;
-  read_deviceid = 0;
-  status_deviceid = 0;
-  tokenavailable = false;
-  lastdata = 0;
-}
-
-xilinx_fsl_master::~xilinx_fsl_master() {}
-
-void xilinx_fsl_master::setparm(char *name) {
-  gval *v = make_gval(32,0);
-  char *pname;
-
-  if ((pname = matchparm(name, "core"))) {
-    if ((hook = findcore(pname)))
-      return;
-    cerr << "xilinx_fsl_master: core " << pname << " not found\n";
-    exit(0);
-  } else if (matchparm(name, "masterread", *v)) {
-    if (hook) {
-      read_deviceid = hook->mem->register_addr(v->toulong()); 
-      register_ipblock(read_deviceid, this);
-    } else {
-      cerr << "xilinx_fsl_master: set core parameter before selecting address\n";
-      exit(0);
-    }
-    return;
-  } else if (matchparm(name, "masterstatus", *v)) {
-    if (hook) {
-      status_deviceid = hook->mem->register_addr(v->toulong()); 
-      register_ipblock(status_deviceid, this);
-    } else {
-      cerr << "xilinx_fsl_master: set core parameter before selecting address\n";
-      exit(0);
-    }
-    return;
-  }
-  cerr << "xilinx_fsl_slave: parameter " << name << " not understood\n";
-}
-
-void xilinx_fsl_master::run() {
-  // sets up a one-place fifp
-  // (full flag goes up after a single write)
-  if ((tokenavailable==false) && (ioval[0]->toulong()==1)) {
-    lastdata = ioval[1]->toulong(); // current data
-    tokenavailable = true;
-  }
-  if (tokenavailable) 
-    ioval[3]->assignulong(1);
-  else
-    ioval[3]->assignulong(0);
-}
-
-bool xilinx_fsl_master::checkterminal(int n, char *tname, aipblock::iodir d) {
-  switch (n) {
-  case 0:
-    return (isinput(d) && isname(tname, "write"));
-    break;
-  case 1:
-    return (isinput(d) && isname(tname, "data"));
-    break;
-  case 2:
-    return (isinput(d) && isname(tname, "control"));
-    break;
-  case 3:
-    return (isoutput(d) && isname(tname, "full"));
-    break;
-  }
-  return false;
-}
-
-unsigned long xilinx_fsl_master::read_device(int deviceid) {
-  if (deviceid == read_deviceid) {
-    tokenavailable = false;
-    return lastdata;
-  } else {
-    // status id
-    if (tokenavailable) 
-      return 1;
-    else
-      return 0;
-  }
-  return ioval[0]->toulong();
-}
-
-bool xilinx_fsl_master::cannotSleepTest() {
-  return false;
-}
+#include <stdlib.h>
 
 //--------------------------------------------------------
 //
@@ -407,21 +197,23 @@ unsigned long xilinx_fsl::read_device(int deviceid) {
 
 //-----------------------------------------------------------------
 // Simple Memory-mapped register(s) attached to OPB
-// ipblock reg3(out Bus2IP_Data    : ns(32); 
-//              out Bus2IP_BE      : ns(4);  
+//
+// ipblock reg3(out Bus2IP_Data    : ns(32); // 0 to dwidth-1
+//              out Bus2IP_BE      : ns(4);  // 0 to dwidth/8 - 1
 //              out Bus2IP_RdCE    : ns(4);  // 0 to c_num_ce - 1
 //              out Bus2IP_WrCE    : ns(4);  // 0 to c_num_ce - 1
 //              in  IP2Bus_Data    : ns(32);
-//              in  IP2Bus_Ack     : ns(1);
-//              in  IP2Bus_Retry   : ns(1);
-//              in  IP2Bus_Error   : ns(1);
-//              in  IP2Bus_ToutSup : ns(1)) {
+//              in  IP2Bus_RdAck   : ns(1);
+//              in  IP2Bus_WrAck   : ns(1);
+//              in  IP2Bus_Error   : ns(1)) {
 //   iptype "xilinx_ipif_reg";
 //   ipparm "core=arm";
 //   ipparm "regid=0x80000000"; // index for regs
 //   ipparm "opid =0x80000004"; // operation id
+//   ipparm "busy =0x80000008"; // busy flag
 //   ipparm "data =0x8000000C"; // data r/w channel
 //  }
+
 xilinx_ipif_reg::xilinx_ipif_reg(char *name) : aipblock(name) {
   hook = 0;
   regid_dev = 0;
@@ -468,16 +260,15 @@ void xilinx_ipif_reg::run() {
   // write in progress
 
   if (opid == writing) {
-
+    
     //    cerr << "writing cycle\n";
-
+    
     ioval[Bus2IP_Data]->assignulong(dataitem);
     ioval[Bus2IP_WrCE]->assignulong(setmask(ioval[Bus2IP_WrCE]->toulong(), regid));
     ioval[Bus2IP_BE]->assignulong(15); // currently only support 32-bit writes
 
-    if ( (ioval[IP2Bus_Ack]->toulong() == 1) ||
-	 (ioval[IP2Bus_Error]->toulong() == 1) ||
-	 (ioval[IP2Bus_Retry]->toulong() == 1)
+    if ( (ioval[IP2Bus_WrAck]->toulong() == 1) ||
+	 (ioval[IP2Bus_Error]->toulong() == 1)
 	 ) {
       // terminate write
       ioval[Bus2IP_WrCE]->assignulong(resetmask(ioval[Bus2IP_WrCE]->toulong(),regid));
@@ -491,9 +282,8 @@ void xilinx_ipif_reg::run() {
     ioval[Bus2IP_RdCE]->assignulong(setmask(ioval[Bus2IP_RdCE]->toulong(), regid));
     ioval[Bus2IP_BE]->assignulong(15); // currently only support 32-bit writes
 
-    if ( (ioval[IP2Bus_Ack]->toulong() == 1) ||
-	 (ioval[IP2Bus_Error]->toulong() == 1) ||
-	 (ioval[IP2Bus_Retry]->toulong() == 1)
+    if ( (ioval[IP2Bus_RdAck]->toulong() == 1) ||
+	 (ioval[IP2Bus_Error]->toulong() == 1)
 	 ) {
       // terminate read
       ioval[Bus2IP_RdCE]->assignulong(resetmask(ioval[Bus2IP_RdCE]->toulong(),regid));
@@ -564,17 +354,14 @@ bool xilinx_ipif_reg::checkterminal(int n, char *tname, aipblock::iodir d) {
   case IP2Bus_Data:  
     return (isinput(d)  && isname(tname,  "IP2Bus_Data"));   
     break;
-  case IP2Bus_Ack:  
-    return (isinput(d)  && isname(tname,  "IP2Bus_Ack"));   
+  case IP2Bus_RdAck:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_RdAck"));   
     break;
-  case IP2Bus_Retry:  
-    return (isinput(d)  && isname(tname,  "IP2Bus_Retry"));   
+  case IP2Bus_WrAck:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_WrAck"));   
     break;
   case IP2Bus_Error:  
     return (isinput(d)  && isname(tname,  "IP2Bus_Error"));   
-    break;
-  case IP2Bus_ToutSup:  
-    return (isinput(d)  && isname(tname,  "IP2Bus_ToutSup"));   
     break;
   }
   return false;
@@ -586,6 +373,191 @@ bool xilinx_ipif_reg::needsWakeupTest() {
 }
 
 bool xilinx_ipif_reg::cannotSleepTest() {
+  return false;
+}
+
+//------------------------------------------------------------------------
+// Simple Memory-mapped register(s) attached to PLB
+//
+// $option "generic user_logic C_DWIDTH integer 32"
+// $option "generic user_logic C_NUM_CE integer 2"
+// $option "attribute_def SIGIS string"
+// $option "attribute_use SIGIS Bus2IP_Clk   CLK"
+// $option "attribute_use SIGIS Bus2IP_Reset RST"
+//
+// ipblock reg3(out Bus2IP_Data    : ns(32); // 0 to dwidth-1
+//              out Bus2IP_BE      : ns(4);  // 0 to dwidth/8 - 1
+//              out Bus2IP_RdCE    : ns(4);  // 0 to c_num_ce - 1
+//              out Bus2IP_WrCE    : ns(4);  // 0 to c_num_ce - 1
+//              in  IP2Bus_Data    : ns(32);
+//              in  IP2Bus_RdAck   : ns(1);
+//              in  IP2Bus_WrAck   : ns(1);
+//              in  IP2Bus_Error   : ns(1)) {
+//   iptype "xilinx_plb_ipif_reg";
+//   ipparm "core=arm";
+//   ipparm "regid=0x80000000"; // index for regs
+//   ipparm "opid =0x80000004"; // operation id
+//   ipparm "data =0x8000000C"; // data r/w channel
+//  }
+
+xilinx_plb_ipif_reg::xilinx_plb_ipif_reg(char *name) : aipblock(name) {
+  hook      = 0;
+  regid_dev = 0;
+  opid_dev  = 0;
+  data_dev  = 0;
+
+  opid      = idle;
+  regid     = 0;
+  dataitem  = 0;
+}
+
+xilinx_plb_ipif_reg::~xilinx_plb_ipif_reg () {}
+
+void xilinx_plb_ipif_reg::setparm(char *_name) {
+  gval *v = make_gval(32,0);
+  char *pname;
+  
+  if ((pname = matchparm(_name, "core"))) {
+    if ((hook = findcore(pname)))
+      return;
+    cerr << "xilinx_plb_ipif_reg: core " << pname << " not found\n";
+    exit(0);
+
+  } else if (matchparm(_name, "regid", *v)) {
+    regid_dev = hook->mem->register_addr(v->toulong());
+    register_ipblock(regid_dev, this);
+    return;
+
+  } else if (matchparm(_name, "opid", *v)) {
+    opid_dev = hook->mem->register_addr(v->toulong());
+    register_ipblock(opid_dev, this);
+    return;
+
+  } else if (matchparm(_name, "data", *v)) {
+    data_dev = hook->mem->register_addr(v->toulong());
+    register_ipblock(data_dev, this);
+    return;
+  }
+
+  cerr << "xilinx_plb_ipif_reg: parameter " << name << " not understood\n";
+}
+
+void xilinx_plb_ipif_reg::run() {
+  // write in progress
+
+  if (opid == writing) {
+
+
+    ioval[Bus2IP_Data]->assignulong(dataitem);
+    ioval[Bus2IP_WrCE]->assignulong(setmask(ioval[Bus2IP_WrCE]->toulong(), regid));
+
+    ioval[Bus2IP_BE]->assignulong(15); // currently only support 32-bit writes
+
+    if ( (ioval[IP2Bus_WrAck]->toulong() == 1) ||
+	 (ioval[IP2Bus_Error]->toulong() == 1)
+	 ) {
+      // terminate write
+      ioval[Bus2IP_WrCE]->assignulong(resetmask(ioval[Bus2IP_WrCE]->toulong(),regid));
+      opid = idle;
+    }
+
+  } else if (opid == reading) {
+
+    dataitem = ioval[IP2Bus_Data]->toulong();
+    ioval[Bus2IP_RdCE]->assignulong(setmask(ioval[Bus2IP_RdCE]->toulong(), regid));
+    ioval[Bus2IP_BE]->assignulong(15); // currently only support 32-bit writes
+
+    if ( (ioval[IP2Bus_RdAck]->toulong() == 1) ||
+	 (ioval[IP2Bus_Error]->toulong() == 1) 
+	 ) {
+      // terminate read
+      ioval[Bus2IP_RdCE]->assignulong(resetmask(ioval[Bus2IP_RdCE]->toulong(),regid));
+      opid = idle;
+    }
+
+  }
+
+}
+
+unsigned long xilinx_plb_ipif_reg::setmask(unsigned long v, unsigned bit) {
+  return v | (1 << (bit&31));
+}
+
+unsigned long xilinx_plb_ipif_reg::resetmask(unsigned long v, unsigned bit) {
+  return v & ~(1 << (bit&31));
+}
+
+void xilinx_plb_ipif_reg::write_device(int dev, unsigned long n) {
+
+  if (dev == regid_dev) {
+    regid = n;
+    //    cerr << "set regid " << regid << "\n";
+  }
+
+  if (dev == opid_dev) {
+    if (opid != idle)
+      cerr <<  "xilinx_plb_ipif_reg: Warning - Operation in progress\n";
+    else
+      opid = n;
+    //    cerr << "set opid " << opid << "\n";
+  }
+
+  if (dev == data_dev) {
+    dataitem = n;
+    //    cerr << "set dataitem " << dataitem << "\n";
+  }
+}
+
+unsigned long xilinx_plb_ipif_reg::read_device(int dev) {
+
+  if (dev == regid_dev)
+    return regid;
+
+  if (dev == opid_dev)
+    return opid;
+
+  if (dev == data_dev)
+    return dataitem;
+
+  return 0;
+}
+
+bool xilinx_plb_ipif_reg::checkterminal(int n, char *tname, aipblock::iodir d) {
+  switch (n) {
+  case Bus2IP_Data:  
+    return (isoutput(d) && isname(tname,  "Bus2IP_Data"));   
+    break;
+  case Bus2IP_BE:  
+    return (isoutput(d) && isname(tname,  "Bus2IP_BE"));   
+    break;
+  case Bus2IP_RdCE:  
+    return (isoutput(d) && isname(tname,  "Bus2IP_RdCE"));   
+    break;
+  case Bus2IP_WrCE:  
+    return (isoutput(d) && isname(tname,  "Bus2IP_WrCE"));   
+    break;
+  case IP2Bus_Data:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_Data"));   
+    break;
+  case IP2Bus_RdAck:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_RdAck"));   
+    break;
+  case IP2Bus_WrAck:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_WrAck"));   
+    break;
+  case IP2Bus_Error:  
+    return (isinput(d)  && isname(tname,  "IP2Bus_Error"));   
+    break;
+  }
+  return false;
+}
+
+bool xilinx_plb_ipif_reg::needsWakeupTest() {
+  if (opid != idle) return true;
+  return false;
+}
+
+bool xilinx_plb_ipif_reg::cannotSleepTest() {
   return false;
 }
 

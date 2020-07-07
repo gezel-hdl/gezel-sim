@@ -10,9 +10,9 @@ all:
 	cd ./euclid;     	  make ; cd .
 	cd ./ssidehsk;   	  make ; cd .
 	cd ./aes8051;	 	  make ; cd .
-#	cd ./diblaze;	 	  make ; cd .
+	cd ./diblaze;	 	  make ; cd .
 	cd ./euclid;	 	  make ; cd .
-#	cd ./pblaze;	 	  make ; cd .
+	cd ./pblaze;	 	  make ; cd .
 	cd ./ramprobe;	 	  make ; cd .
 	cd ./block8051;  	  make ; cd .
 	cd ./armsfu;	 	  make ; cd .
@@ -20,7 +20,6 @@ all:
 	cd ./fslinterface;        make ; cd .
 	cd ./fsl2;                make ; cd .
 	cd ./xilinxfsl_single;    make ; cd .
-	cd ./xilinxfsl_split;     make ; cd .
 	cd ./xilinxipiffifo;      make ; cd .
 	cd ./xilinxipiffifo_gcd;  make ; cd .
 	cd ./xilinxipifreg_gcd;   make ; cd .
@@ -38,9 +37,9 @@ sim:
 	cd ./euclid;       	  make sim; cd .
 	cd ./ssidehsk;     	  make sim; cd .
 	cd ./aes8051;	   	  make sim; cd .
-#	cd ./diblaze;	   	  make sim; cd .
+	cd ./diblaze;	   	  make sim; cd .
 	cd ./euclid;	   	  make sim; cd .
-#	cd ./pblaze;	   	  make sim; cd .
+	cd ./pblaze;	   	  make sim; cd .
 	cd ./ramprobe;	   	  make sim; cd .
 	cd ./block8051;    	  make sim; cd .
 	cd ./armsfu;	   	  make sim; cd .
@@ -48,7 +47,6 @@ sim:
 	cd ./fslinterface;        make sim; cd .
 	cd ./fsl2;                make sim; cd .
 	cd ./xilinxfsl_single;    make sim; cd .
-	cd ./xilinxfsl_split;     make sim; cd .
 	cd ./xilinxipiffifo;      make sim; cd .
 	cd ./xilinxipiffifo_gcd;  make sim; cd .
 	cd ./xilinxipifreg_gcd;   make sim; cd .
@@ -66,9 +64,10 @@ clean:
 	cd ./euclid;       	  make clean; cd .
 	cd ./ssidehsk;     	  make clean; cd .
 	cd ./aes8051;	   	  make clean; cd .
-#	cd ./diblaze;	   	  make clean; cd .
+	cd ./diblaze;	   	  make clean; cd .
 	cd ./euclid;	   	  make clean; cd .
-#	cd ./pblaze;	   	  make clean; cd .
+	cd ./pblaze;	   	  make clean; cd .
+	cd ./diblaze;	   	  make clean; cd .
 	cd ./ramprobe;	   	  make clean; cd .
 	cd ./block8051;    	  make clean; cd .
 	cd ./armsfu;	   	  make clean; cd .
@@ -76,7 +75,6 @@ clean:
 	cd ./fslinterface; 	  make clean; cd .
 	cd ./fsl2;                make clean; cd .
 	cd ./xilinxfsl_single;    make clean; cd .
-	cd ./xilinxfsl_split;     make clean; cd .
 	cd ./xilinxipiffifo;      make clean; cd .
 	cd ./xilinxipiffifo_gcd;  make clean; cd .
 	cd ./xilinxipifreg_gcd;   make clean; cd .

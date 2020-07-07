@@ -1,0 +1,9 @@
+ipblock arm1 {
+  iptype "armsystem";
+  ipparm "exec = cordic_ref";
+}
+
+
+system S {
+  arm1;
+}

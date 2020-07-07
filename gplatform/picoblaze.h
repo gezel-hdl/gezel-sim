@@ -36,6 +36,7 @@ public:
 
   void setparm(char *_name);
   void run();
+  void out_run();
   bool checkterminal(int n, char *tname, aipblock::iodir d);
   bool cannotSleepTest(); 
   bool needsWakeupTest();
@@ -59,6 +60,8 @@ private:
 
   void do_tophalf();
   void do_bothalf();
+  void do_tophalf_out();
+  void do_bothalf_out();
   bool readflag();
   bool writeflag();
 

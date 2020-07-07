@@ -15,13 +15,24 @@
 //---------------------------------------------------------
 
 void picoblaze::PortIn() {
+
+  if (verbose)
+    cout << glbRTCycle 
+	 << ": PortIn[" 
+	 << portid << "]" 
+	 << endl;
+
   readoperation = true;
 }
 
 uint8_t picoblaze::PortIn2ndHalf() {
 
   if (verbose)
-    cout << glbRTCycle << ": PortIn2ndHalf[" << portid << "]: " << ioval[PORT_IDATA]->toulong() << endl;
+    cout << glbRTCycle 
+	 << ": PortIn2ndHalf[" 
+	 << portid << "]: " 
+	 << ioval[PORT_IDATA]->toulong() 
+	 << endl;
 
   return ioval[PORT_IDATA]->toulong();
 }
@@ -29,7 +40,12 @@ uint8_t picoblaze::PortIn2ndHalf() {
 void picoblaze::PortOut(uint8_t data) {
 
   if (verbose)
-    cout << glbRTCycle << ": PortOut[" << portid << "]: " << data << endl;
+    cout << glbRTCycle 
+	 << ": PortOut[" 
+	 << portid 
+	 << "]: " 
+	 << data 
+	 << endl;
 
   odata = data;
   writeoperation = true;
@@ -61,26 +77,37 @@ picoblaze::picoblaze(char *n) : aipblock(n) {
   verbose = 0;
   exec = TOP_HALF;
   pico.addPort(this);
+
+  regOutput(PORT_INTERRUPT_ACK);
+  regOutput(PORT_ID);
+  regOutput(PORT_ODATA);
+  regOutput(PORT_RS);
+  regOutput(PORT_WS);
+}
+
+void picoblaze::out_run() {
+  if (exec == TOP_HALF) {
+    do_tophalf_out();
+  } else if (exec == BOT_HALF) {
+    do_bothalf_out();
+  } else {
+    assert((true == false) && "picoblaze: invalid exec type");
+  }
 }
 
 void picoblaze::run() {
-
   if (exec == TOP_HALF) {
     do_tophalf();
     exec = BOT_HALF;
-  }
-  else if (exec == BOT_HALF) {
+  } else if (exec == BOT_HALF) {
     do_bothalf();
     exec = TOP_HALF;
-  }
-  else {
+  } else {
     assert((true == false) && "picoblaze: invalid exec type");
   }
-
 }
 
-void picoblaze::do_tophalf() {
-
+void picoblaze::do_tophalf_out() {
   pico.Next();
 
   // Interrupt acks always handled at tophalf
@@ -89,7 +116,9 @@ void picoblaze::do_tophalf() {
   ioval[PORT_ODATA]->assignulong(odata);
   ioval[PORT_RS]->assignulong(0);
   ioval[PORT_WS]->assignulong(0);
+}
 
+void picoblaze::do_tophalf() {
   if (ioval[PORT_RESET]->toulong()) {
     pico.Reset();
   }
@@ -102,10 +131,7 @@ void picoblaze::do_tophalf() {
   should_ack_int = ioval[PORT_INTERRUPT]->toulong();
 }
 
-void picoblaze::do_bothalf() {
-
-  pico.Next2ndHalf();
-
+void picoblaze::do_bothalf_out() {
   // Interrupt acks always handled at tophalf
   ioval[PORT_INTERRUPT_ACK]->assignulong(0);
   ioval[PORT_ID]->assignulong(portid);
@@ -114,7 +140,9 @@ void picoblaze::do_bothalf() {
   ioval[PORT_WS]->assignulong(writeflag());
 }
 
-
+void picoblaze::do_bothalf() {
+  pico.Next2ndHalf();
+}
 
 void picoblaze::setparm(char *_name) {
 

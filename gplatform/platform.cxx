@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: platform.cxx 83 2007-07-16 01:14:45Z schaum $
+// $Id: platform.cxx 151 2009-09-29 14:25:18Z schaum $
 //--------------------------------------------------------------
 
 #include "platform.h"
@@ -36,6 +36,8 @@
 
 #include "i8051system.h" // ipblocks for 8051
 #include "picoblaze.h"  // ipblocks for picoblaze
+
+#include <stdlib.h>
 
 // ------- ALLOCATOR --------
 //
@@ -58,14 +60,15 @@ aipblock * gplatform_ipblockcreate(char *instname, char *tname) {
   CREATE(armbuffer);
   CREATE(armfslslave);
   CREATE(armfslmaster);
+  CREATE(armfifo);
 
-  CREATE(xilinx_fsl_master);
-  CREATE(xilinx_fsl_slave);
   CREATE(xilinx_fsl);
   CREATE(xilinx_ipif_reg);
   CREATE(xilinx_ipif_mem);
   CREATE(xilinx_ipif_wrfifo);
   CREATE(xilinx_ipif_rdfifo);
+
+  CREATE(xilinx_plb_ipif_reg);
 
 #ifdef SUPPORTSIMITSFU
   CREATE(armsfu2x2);
@@ -110,7 +113,7 @@ envptype *glbSimEnvp = 0;
 unsigned int glbRunningISS;
 
 int main(int argc, char *argv[], envptype envp) {
-  unsigned long max_cnum  = (unsigned long long)-1;
+  unsigned long max_cnum  = (unsigned long)-1;
   char * gezel_name = NULL;
   rtsimgen *RTsimgen = 0;
   unsigned cyclecount;

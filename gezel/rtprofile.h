@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: rtprofile.h 78 2007-07-14 19:00:16Z schaum $
+// $Id: rtprofile.h 97 2008-08-10 09:19:04Z schaum $
 //--------------------------------------------------------------
 
 
@@ -39,6 +39,9 @@ class rtprofile_op {
   gval *vxor;
   bool upedgeMode;
   vector<unsigned>  weights;
+
+  symid thesym;
+
  protected:
   unsigned evals;
   unsigned toggles;
@@ -46,7 +49,7 @@ class rtprofile_op {
   unsigned zeroes;
  public:
   friend class rtprofile;
-  rtprofile_op(bool _upedgeMode, vector<unsigned> &opweights);
+  rtprofile_op(bool _upedgeMode, vector<unsigned> &opweights, symid id);
   void hammingupdate(gval *nv);
 };
 

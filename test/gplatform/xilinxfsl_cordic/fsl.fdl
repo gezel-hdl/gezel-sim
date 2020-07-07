@@ -1,0 +1,188 @@
+ipblock arm1 {
+  iptype "armsystem";
+  ipparm "exec = cordic_fixp";
+}
+
+ipblock fsl(in  FSL_S_Clk     : ns(1);   // notused
+            in  FSL_S_Read    : ns(1);   // hshk for slave side
+            out FSL_S_Data    : ns(32);  // data for slave side
+            out FSL_S_Control : ns(1);   // control for slave side
+            out FSL_S_Exists  : ns(1);   // hshk for slave side
+            in  FSL_M_Clk     : ns(1);   // notused
+            in  FSL_M_Write   : ns(1);   // hshk for master side
+            in  FSL_M_Data    : ns(32);  // data for master side
+            in  FSL_M_Control : ns(1);   // control for master side
+            out FSL_M_Full    : ns(1)) { // hshk for master side
+
+   iptype "xilinx_fsl";
+   ipparm "core=arm1";                // strongarm core
+
+   ipparm "slavewrite  = 0x80000000"; // address used to write slave data
+   ipparm "slavestatus = 0x80000004"; // address used to write slave data
+
+   ipparm "masterread  = 0x80000008"; // address used to read master data
+   ipparm "masterstatus= 0x8000000C"; // address used to poll master status
+}
+
+dp cordic_fsmd    (in  rdata   : tc(32);  // interface to slave
+                   in  exists  : ns(1);
+                   out read    : ns(1);
+
+                   out wdata   : tc(32);  // interface to master
+                   in  full    : ns(1);
+                   out write   : ns(1)) {
+
+  lookup angles : tc(32) = {
+    210828714,
+    124459457,
+     65760959,
+     33381289,
+     16755421,
+      8385878,
+      4193962,
+      2097109,
+      1048570,
+       524287,
+       262143,
+       131071,
+        65535,
+        32767,
+        16383,
+         8191,
+         4095,
+         2047,
+         1024,
+          511 };
+
+  reg X, Y, target, current: tc(32);
+  reg step                 : ns( 5);
+  reg done, rexists, rfull : ns( 1);
+
+  always        { rexists = exists;
+                  rfull   = full;
+                }
+  sfg dowrite   { write = 1; }
+  sfg dontwrite { write = 0; 
+                  wdata = 0;
+                }
+  sfg doread    { read  = 1; }
+  sfg dontread  { read  = 0; }
+
+  sfg capture   { step   = 0;
+                  done   = 0;
+                  current= 0;
+                  X      = 163008218;
+                  Y      = 0;
+                  target = rdata;
+                }
+  sfg iterate   {
+                  step    = step + 1;
+                  done    = (step == 19);
+                  X       = (target > current) ? X - (Y >> step) : 
+                                                 X + (Y >> step) ;
+                  Y       = (target > current) ? Y + (X >> step) : 
+                                                 Y - (X >> step) ;
+		  current = (target > current) ? current + angles(step) :
+                                                 current - angles(step) ;
+                }
+  sfg writeX    { wdata = X; } 
+  sfg writeY    { wdata = Y; } 
+
+}
+fsm fsm_cordic_fsmd(cordic_fsmd) {
+  initial s0;
+  state s1, s2, s22;
+  state c1;
+
+  // wait for SW to write slave
+  @s0 if (rexists) then (capture , doread, dontwrite)   -> c1;
+                   else (dontread, dontwrite)           -> s0;
+
+  @c1 if (done)    then (dontread, dontwrite)           -> s1;
+                   else (iterate, dontread, dontwrite)  -> c1;
+
+  // after read op completes, do a write to the master
+  @s1 if (rfull)   then (dontread, dontwrite)           -> s1;
+                   else (dowrite , writeX, dontread )   -> s2;
+
+  @s2 if (rfull)   then (dontread, dontwrite)           -> s2;
+                   else (dowrite , writeY, dontread )   -> s0;
+
+}
+
+dp fslcordic(  out FSL_S_Clk     : ns(1);   // notused
+               out FSL_S_Read    : ns(1);   // hshk for slave side
+               in  FSL_S_Data    : ns(32);  // data for slave side
+               in  FSL_S_Control : ns(1);   // control for slave side
+               in  FSL_S_Exists  : ns(1);   // hshk for slave side
+               out FSL_M_Clk     : ns(1);   // notused
+               out FSL_M_Write   : ns(1);   // hshk for master side
+               out FSL_M_Data    : ns(32);  // data for master side
+               out FSL_M_Control : ns(1);   // control for master side
+               in  FSL_M_Full    : ns(1)) { // hshk for master side
+
+  sig rdata, wdata       : ns(32);
+  sig write, read        : ns(1);
+  sig exists, full       : ns(1);
+
+  use cordic_fsmd    (rdata, exists, read, 
+                      wdata, full, write);
+
+  always {
+    rdata         = FSL_S_Data;
+    exists        = FSL_S_Exists;
+    FSL_S_Read    = read;
+
+    FSL_M_Data    = wdata;
+    FSL_M_Control = 0;
+    FSL_M_Write   = write;
+    full          = FSL_M_Full;
+
+    FSL_S_Clk     = 0;
+    FSL_M_Clk     = 0;
+  }
+}
+
+dp top {
+
+  sig FSL_Clk       : ns( 1); 
+  sig FSL_Rst       : ns( 1); 
+  sig FSL_S_Clk     : ns( 1); 
+  sig FSL_S_Read    : ns( 1); 
+  sig FSL_S_Data    : ns(32);
+  sig FSL_S_Control : ns( 1); 
+  sig FSL_S_Exists  : ns( 1); 
+  sig FSL_M_Clk     : ns( 1); 
+  sig FSL_M_Write   : ns( 1); 
+  sig FSL_M_Data    : ns(32);
+  sig FSL_M_Control : ns( 1); 
+  sig FSL_M_Full    : ns( 1); 
+
+  use arm1;
+
+  use fslcordic (FSL_S_Clk     ,
+                 FSL_S_Read    ,
+                 FSL_S_Data    ,
+                 FSL_S_Control ,
+                 FSL_S_Exists  ,
+                 FSL_M_Clk     ,
+                 FSL_M_Write   ,
+                 FSL_M_Data    ,
+                 FSL_M_Control ,
+                 FSL_M_Full    );
+
+  use fsl     (FSL_S_Clk     ,
+               FSL_S_Read    ,
+               FSL_S_Data    ,
+               FSL_S_Control ,
+               FSL_S_Exists  ,
+               FSL_M_Clk     ,
+               FSL_M_Write   ,
+               FSL_M_Data    ,
+               FSL_M_Control ,
+               FSL_M_Full    );
+}
+
+system S {
+  top;
+}

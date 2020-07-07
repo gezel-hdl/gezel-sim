@@ -34,10 +34,10 @@ class namesym : public asym {
 //  char nm[MAXSYMLEN];
   char *nm;
  public:
-  namesym(char *_staticname);
+  namesym(const char *_staticname);
   char *getname() { return nm; }
   virtual ~namesym();
-  bool matchname(char *n);
+  bool matchname(const char *n);
   void show(ostream &os);
   void showlex(ostream &os) {
     os << nm;
@@ -295,7 +295,7 @@ class ctlsym : public asym {
 //  char nm[MAXSYMLEN];
   char *nm;
  public:
-  ctlsym(char *_staticname, symid _dp);
+  ctlsym(const char *_staticname, symid _dp);
   virtual ~ctlsym();
   void show(ostream &os);
   void showlex(ostream &os) {

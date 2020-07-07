@@ -16,12 +16,13 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: asymbol.cxx 78 2007-07-14 19:00:16Z schaum $
+// $Id: asymbol.cxx 104 2009-05-19 14:35:17Z schaum $
 //--------------------------------------------------------------
 
 #include "asymbol.h"
 #include "module.h"
 #include "fdlcode.h"
+#include <cstdlib>
 #include <string.h>
 #include <iomanip> // setw
 
@@ -86,7 +87,7 @@ void symbol::showheader(ostream &os) {
   os << setw(10) << "Context";
 }
 
-char *symbol::typestr(_symtype T) {
+const char *symbol::typestr(_symtype T) {
   switch (T) {
   case datapath:       return "datapath"; break;
   case datapath_clone: return "datapath_clone"; break;
@@ -462,7 +463,7 @@ bool symboltable::append(symbol *S) {
 
 // enters a name in the dp index as a datapath name
 // only useful for fast lookup of a symid!
-void symboltable::idx_markdp(char *dpname, symid dpid) {
+void symboltable::idx_markdp(const char *dpname, symid dpid) {
   idx_dpmap[dpname] = dpid;
 
 }
@@ -707,7 +708,7 @@ void symboltable::clone_ipblock(symid currentdp, symid parentdp) {
 // this will be indeed the case.
 
 //--------------------------------------------------------
-symid symboltable::findtypedname(char *n, symbol::_symtype T) {
+symid symboltable::findtypedname(const char *n, symbol::_symtype T) {
   for (table_riter i = table.rbegin();
        i != table.rend();
        ++i) {
@@ -762,14 +763,14 @@ symid symboltable::findipparm(symid ipb, symid parmstart) {
 
 //--------------------------------------------------------
 // check if system interconnect name is unique
-symid symboltable::findsystem(char *n) {
+symid symboltable::findsystem(const char *n) {
   return findtypedname(n, symbol::system);
 }
 
 //--------------------------------------------------------
 // check if controller name is unique
 // controller is hwire_ctl or seq_ctl
-symid symboltable::findctl(char *n) {
+symid symboltable::findctl(const char *n) {
   symid v;
   v = findtypedname(n, symbol::hwire_ctl);
   if (v == NOSYMBOL) {
@@ -783,7 +784,7 @@ symid symboltable::findctl(char *n) {
 
 //--------------------------------------------------------
 // check if datapath name is unique
-symid symboltable::finddp(char *n) {
+symid symboltable::finddp(const char *n) {
 
 #ifdef PARSERINDEXTABLES
   idx_dpmap_it e = idx_dpmap.find(n);
@@ -803,13 +804,13 @@ symid symboltable::finddp(char *n) {
 
 //--------------------------------------------------------
 // check if net name is unique
-symid symboltable::findnet(char *n) {
+symid symboltable::findnet(const char *n) {
   return findtypedname(n, symbol::sysnet);
 }
 
 //--------------------------------------------------------
 // check if sfg name is unique in current datapath
-symid symboltable::findsfg_backward(char *n, symid fdl_datapath) {
+symid symboltable::findsfg_backward(const char *n, symid fdl_datapath) {
   for (table_riter i = table.rbegin();
        i != table.rend();
        ++i) {
@@ -824,7 +825,7 @@ symid symboltable::findsfg_backward(char *n, symid fdl_datapath) {
 
 //--------------------------------------------------------
 // check if sfg name is unique in current datapath
-symid symboltable::findsfg_forward(char *n, symid fdl_datapath) {
+symid symboltable::findsfg_forward(const char *n, symid fdl_datapath) {
   for (table_iter i = table.begin();
        i != table.end();
        ++i) {
@@ -839,7 +840,7 @@ symid symboltable::findsfg_forward(char *n, symid fdl_datapath) {
 
 //--------------------------------------------------------
 // check if local signal is unique in current sfg
-symid symboltable::findlocalsig(char *n, symid sfgcontext) {
+symid symboltable::findlocalsig(const char *n, symid sfgcontext) {
   register bool issig;
   for (table_riter i = table.rbegin();
        i != table.rend();
@@ -857,7 +858,7 @@ symid symboltable::findlocalsig(char *n, symid sfgcontext) {
 
 //--------------------------------------------------------
 // check for state definition in FSM
-symid symboltable::findstate(char *n, symid fsmcontext) {
+symid symboltable::findstate(const char *n, symid fsmcontext) {
   register bool isstate;
    for (table_riter i = table.rbegin();
        i != table.rend();
@@ -876,7 +877,7 @@ symid symboltable::findstate(char *n, symid fsmcontext) {
 //--------------------------------------------------------
 // check if common signal and/or port name is unique in 
 // current datapath
-symid symboltable::findcomsig(char *n, symid fdl_datapath) {
+symid symboltable::findcomsig(const char *n, symid fdl_datapath) {
 
 #ifdef PARSERINDEXTABLES
 
@@ -915,7 +916,7 @@ symid symboltable::findcomsig(char *n, symid fdl_datapath) {
 
 //--------------------------------------------------------
 // check if a datapath is included by any other one in a direct hierarchy relationship
-symid symboltable::findincdp(char *n) {
+symid symboltable::findincdp(const char *n) {
   symid CHK = finddp(n);
   if (CHK == NOSYMBOL)
     return CHK;
@@ -933,7 +934,7 @@ symid symboltable::findincdp(char *n) {
 
 //--------------------------------------------------------
 // check if a datapath includes another one in a direct hierarchy relationship
-symid symboltable::findincdp(char *n, symid fdl_datapath) {
+symid symboltable::findincdp(const char *n, symid fdl_datapath) {
   symid CHK = finddp(n);
   if (CHK == NOSYMBOL)
     return CHK;
@@ -954,10 +955,20 @@ symid symboltable::findincdp(char *n, symid fdl_datapath) {
   return NOSYMBOL;
 }
 
+map <string, symid> findsigdef_cache;
+
 //--------------------------------------------------------
 // check if signal name is unique in current scope
-symid symboltable::findsigdef(char *n, symid fdl_sfg, symid fdl_datapath) {
+symid symboltable::findsigdef(const char *n, symid fdl_sfg, symid fdl_datapath) {
   register bool issig;
+
+  // shortcut
+  string dpkey = table[fdl_datapath]->content()->getname();
+  string key = n + dpkey;
+  if (findsigdef_cache.find(key) != findsigdef_cache.end()) {
+    return findsigdef_cache[key];
+  }
+
   for (table_riter i = table.rbegin();
        i != table.rend();
        ++i) {
@@ -969,10 +980,18 @@ symid symboltable::findsigdef(char *n, symid fdl_sfg, symid fdl_datapath) {
     if (issig) {
       if ((i->second->context() == fdl_sfg) &&
 	  (i->second->content()->matchname(n))) {
+
+	// shortcut
+	findsigdef_cache[key] = i->second->id();
+
 	return i->second->id();
       }
       if ((i->second->context() == fdl_datapath) &&
 	  (i->second->content()->matchname(n))) {
+
+	// shortcut
+	findsigdef_cache[key] = i->second->id();
+
 	return i->second->id();
       }
     }

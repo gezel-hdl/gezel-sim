@@ -39,14 +39,14 @@ class tracerdumper {
 };
 
 class vcddumper {
-  char *fname;
+  const char *fname;
   vector<gval *> signals;
   int change_flag;
   int idnum;     // contains number of trace objects registered
   ofstream os;
 
  public:
-  vcddumper(char *_fname);
+  vcddumper(const char *_fname);
   int reg_trace (artsignal *_sig);
   void update (int id, gval *v);
   void eval(unsigned long);

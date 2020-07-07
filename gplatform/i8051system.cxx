@@ -16,11 +16,12 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: i8051system.cxx 52 2006-05-28 19:33:23Z schaum $
+// $Id: i8051system.cxx 107 2009-06-14 15:50:39Z schaum $
 //--------------------------------------------------------------
 
 #include "rtsim.h"
 #include "i8051system.h"
+#include <stdlib.h>
 
 // ipblock my8051 {
 //   iptype "i8051system";

@@ -1,4 +1,4 @@
-include ../../Makefile.cfg
+include /opt/gezel/share/Makefile.cfg
 
 driver.ihx: driver.c simcmd
 	$(SDCC) driver.c

@@ -16,11 +16,12 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: armsystem.cxx 92 2007-09-21 20:56:53Z schaum $
+// $Id: armsystem.cxx 151 2009-09-29 14:25:18Z schaum $
 //--------------------------------------------------------------
 
 #include "armsystem.h"
 #include "platform.h"
+#include <stdlib.h>
 
 // ipblock myarm {
 //   iptype "armsystem";
@@ -36,9 +37,11 @@ arm_simulator *findcore(char *pname) {
   vector<armsystem *>::iterator ai;
   for (ai = armsystemlist.begin();
        ai != armsystemlist.end();
-       ai++) 
+       ai++) {
+    //    cerr << *ai << "\n"; 
     if ((*ai)->blockisname(pname)) 
       return (*ai)->sim;
+  }
   return 0;
 }
 
@@ -69,7 +72,21 @@ armsystem::armsystem(char *name) : aipblock(name) {
   simargc    = 0;
   period     = 1;
   period_cnt = period;
-  slave_exec = 0;
+
+
+  // slave count holds the number of 'slave' ipblocks that should
+  // execute before armsystem is allowed to run
+  // This is used for SFU interfaces:
+  //    armsystem should only run after all SFU interfaces have
+  //    updated their outputs. When SFU interfaces are present, the
+  //    call sequence is: 
+  //    1) call out_run for all slave modules
+  //    2) call run for all slave modules
+  //    3) call run for armsystem
+  // The slave count mechanisms prevents that 2) and 3) are interchanged
+
+  slave_count = 0;
+  slave_count_init = 0;
 }
 
 void armsystem::setparm(char *_name) {
@@ -124,7 +141,7 @@ bool armsystem::cannotSleepTest() {
 }
 
 void armsystem::run() {
-  if (slave_exec == 0)
+  if (slave_count == 0)
     realrun();
 }
 
@@ -138,12 +155,14 @@ void armsystem::stop() {
 }
 
 void armsystem::setslave(aipblock *s) {
-  slave_exec = s;
+  slave_count++;
+  slave_count_init++;
 }
 
 void armsystem::slaverun(aipblock *s) {
-  if (s == slave_exec) {
-    //    cerr << "real run " << s << "\n";
+  slave_count--;
+  if (slave_count == 0) {
+    slave_count = slave_count_init;
     realrun();
   }
 }
@@ -226,11 +245,12 @@ void armsystemsource::setparm(char *_name) {
   if ((pname = matchparm(_name, "core"))) {
     if ((hook = findcore(pname)))
 	return;
-    cerr << "armsystemsource: core " << pname << " not found\n";
+    //    cerr << "armsystemsource: core " << pname << " not found\n";
     exit(0);
   } else if (matchparm(_name, "address", *v)) {
     if (hook) {
       deviceid = hook->mem->register_addr(v->toulong()); 
+      //      cerr << "source deviceid " << deviceid << "\n";
       register_ipblock(deviceid, this);
     } else {
       cerr << "armsystemsource: set core parameter before selecting address\n";
@@ -272,6 +292,134 @@ void armsystemsource::write_device(int dev, unsigned long n) {
 }
 
 
+//----------------------------------------------------------------
+
+// ARMFIFO
+// ipblock fifo1 {
+//   iptype "armfifo";
+//   ipparm "sendcore=myarm";
+//   ipparm "receivecore=myarm2";
+//   ipparm "size=256";
+//   ipparm "base=0x80000000";
+// }
+
+armfifo::armfifo(char *name) : aipblock(name) {
+  sendhook = 0;
+  receivehook = 0;
+  fifosize = 1; // default fifo length
+}
+
+void armfifo::setparm(char *_name) {
+  gval *v = make_gval(32,0);
+  char *pname;
+  
+  if ((pname = matchparm(_name, "sendcore"))) {
+    if ((sendhook = findcore(pname)))
+      return ;
+    cerr << "armfifo: send core " << pname << " not found\n";
+    exit(0);
+
+  } else if ((pname = matchparm(_name, "receivecore"))) {
+    if ((receivehook = findcore(pname))) 
+      return;
+    cerr << "armfifo: receive core " << pname << " not found\n";
+    exit(0);
+
+  } else if (matchparm(_name, "sendbase", *v)) {
+
+    cerr << "armfifo: set send address " << hex << v->toulong() <<  dec << "\n";
+    if (sendhook) {
+      senddeviceid = sendhook->mem->register_addr(v->toulong()); 
+      //      cerr << "senddeviceid " << senddeviceid << "\n";
+      register_ipblock(senddeviceid, this);
+    } else {
+      cerr << "armfifo: select send core before selecting address\n";
+      exit(0);
+    }
+
+    cerr << "armfifo: set send status address " <<  hex << v->toulong()+4 <<  dec << "\n";
+    if (sendhook) {
+      sendstatusdeviceid = sendhook->mem->register_addr(v->toulong()+4); 
+      //     cerr << "sendstatusdeviceid " << sendstatusdeviceid << "\n";
+      register_ipblock(sendstatusdeviceid, this);
+    } else {
+      cerr << "armfifo: select send core before selecting status address\n";
+      exit(0);
+    }
+
+  } else if (matchparm(_name, "receivebase", *v)) {
+
+    cerr << "armfifo: set receive address " <<  hex << v->toulong() <<  dec << "\n";
+    if (receivehook) {
+      receivedeviceid = receivehook->mem->register_addr(v->toulong()); 
+      //      cerr << "receivedeviceid " << receivedeviceid << "\n";
+      register_ipblock(receivedeviceid, this);
+    } else {
+      cerr << "armfifo: select receive core before selecting address\n";
+      exit(0);
+    }
+
+    cerr << "armfifo: set receive status address " <<  hex << v->toulong()+4 << dec << "\n";
+    if (receivehook) {
+      receivestatusdeviceid = receivehook->mem->register_addr(v->toulong()+4); 
+      //      cerr << "receivestatusdeviceid " << receivestatusdeviceid << "\n";
+      register_ipblock(receivestatusdeviceid, this);
+    } else {
+      cerr << "armfifo: select receive core before selecting status address\n";
+      exit(0);
+    }
+
+  } else if (matchparm(_name, "size", *v)) {
+    cerr << "armfifo: fifo size " << v->toulong() << "\n";
+    fifosize = v->toulong();
+  } else 
+    cerr << "armsystemsink: parameter " << _name << " not understood\n";
+}
+
+void armfifo::run() {
+}
+
+bool armfifo::checkterminal(int n, char *tname, aipblock::iodir d) {
+  return false;
+}
+
+bool armfifo::cannotSleepTest() {
+  return false;
+}
+
+unsigned long armfifo::read_device(int dev) {
+  unsigned r = 0;
+
+  // cerr << "pop on " << dev << " expect " 
+  //      << sendstatusdeviceid << " "
+  //      << receivestatusdeviceid << " "
+  //      << receivedeviceid << "\n";
+
+  if (dev == sendstatusdeviceid) {
+//    cerr << "send status " << fifo.size() << "\n";
+    r = fifosize - fifo.size();
+  } else if (dev == receivestatusdeviceid) {
+    r = fifo.size();
+  } else if (dev == receivedeviceid) {
+    if (fifo.size() > 0) {
+//      cerr << "pop\n";
+      r = fifo.front();
+      fifo.pop();
+    }
+  }
+  return r;
+}
+
+void armfifo::write_device(int dev, unsigned long n) {
+
+//  cerr << "push on " << dev << " expect " << senddeviceid << " val " << n << "\n";
+
+  if (dev == senddeviceid) {
+//    cerr << "send fifo " << fifo.size() << " " << fifosize << "\n";
+    if (fifo.size() < fifosize)
+      fifo.push(n);
+  }
+}
 
 //----------------------------------------------------
 //  ipblock fsl1(out data   : ns(32);
@@ -826,10 +974,12 @@ void armsfu2x2::run() {
   hook->sfu22_d1[deviceid] = ioval[2]->toulong();
   hook->sfu22_d2[deviceid] = ioval[3]->toulong();
   //  cerr << "slaverun 2x2\n";
+  // cerr << "run sfu 2x2 id " << deviceid << " v " << hex << ioval[2]->toulong() << " " << ioval[3]->toulong() << "\n";
   myarm->slaverun(this);
 }
 
 void armsfu2x2::out_run() {
+  // cerr << "out_run sfu 2x2 id " << deviceid << " v " << hex << hook->sfu22_s1[deviceid] << " " << (hook->sfu22_s2[deviceid])<< "\n";
   ioval[0]->assignulong(hook->sfu22_s1[deviceid]);
   ioval[1]->assignulong(hook->sfu22_s2[deviceid]);
 }
@@ -1039,6 +1189,7 @@ void armsfu2x1::touch() {
 //----------------------------------------------------------------
 // SFU write operation
 void ext_write_sfu2x2(unsigned index) {
+  //  cerr << index << "\n";
   if (sfu2x2map.find(index) != sfu2x2map.end()) {
     sfu2x2map[index]->touch();
   }

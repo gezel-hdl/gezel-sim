@@ -57,7 +57,7 @@ dp aes_rcon(in  kld : ns(1);
             out res : ns(32)) {
 
   reg rcnt      : ns(4);
-  sig rcnt_next : ns(4);
+  sig rcnt_nnext : ns(4);
 
   always {
     res  = kld         ? 0x01000000 : 
@@ -73,8 +73,8 @@ dp aes_rcon(in  kld : ns(1);
            (rcnt == 9) ? 0x36000000 :
                          0x00000000 ;
 
-    rcnt_next = rcnt + 1;
-    rcnt      = kld ? 0 : ((rcnt == 10) ? rcnt : rcnt_next);
+    rcnt_nnext = rcnt + 1;
+    rcnt      = kld ? 0 : ((rcnt == 10) ? rcnt : rcnt_nnext);
 //  $display("rcnt ", rcnt);
   }
 }
@@ -162,10 +162,10 @@ dp aes_top(in  rstaes      :   ns(1);
   reg sa10, sa11, sa12, sa13 : ns(8);
   reg sa20, sa21, sa22, sa23 : ns(8);
   reg sa30, sa31, sa32, sa33 : ns(8);
-  sig sa00_next, sa01_next, sa02_next, sa03_next : ns(8);
-  sig sa10_next, sa11_next, sa12_next, sa13_next : ns(8);
-  sig sa20_next, sa21_next, sa22_next, sa23_next : ns(8);
-  sig sa30_next, sa31_next, sa32_next, sa33_next : ns(8);
+  sig sa00_nnext, sa01_nnext, sa02_nnext, sa03_nnext : ns(8);
+  sig sa10_nnext, sa11_nnext, sa12_nnext, sa13_nnext : ns(8);
+  sig sa20_nnext, sa21_nnext, sa22_nnext, sa23_nnext : ns(8);
+  sig sa30_nnext, sa31_nnext, sa32_nnext, sa33_nnext : ns(8);
   sig sa00_sub, sa01_sub, sa02_sub, sa03_sub : ns(8);
   sig sa10_sub, sa11_sub, sa12_sub, sa13_sub : ns(8);
   sig sa20_sub, sa21_sub, sa22_sub, sa23_sub : ns(8);
@@ -220,22 +220,22 @@ dp aes_top(in  rstaes      :   ns(1);
      ld_r = ld;
 
      // addroundkey
-     sa33 = ld_r ? text_in[  7:  0] ^ w3[ 7: 0] : sa33_next;
-     sa23 = ld_r ? text_in[ 15:  8] ^ w3[15: 8] : sa23_next;
-     sa13 = ld_r ? text_in[ 23: 16] ^ w3[23:16] : sa13_next;
-     sa03 = ld_r ? text_in[ 31: 24] ^ w3[31:24] : sa03_next;
-     sa32 = ld_r ? text_in[ 39: 32] ^ w2[ 7: 0] : sa32_next;
-     sa22 = ld_r ? text_in[ 47: 40] ^ w2[15: 8] : sa22_next;
-     sa12 = ld_r ? text_in[ 55: 48] ^ w2[23:16] : sa12_next;
-     sa02 = ld_r ? text_in[ 63: 56] ^ w2[31:24] : sa02_next;
-     sa31 = ld_r ? text_in[ 71: 64] ^ w1[ 7: 0] : sa31_next;
-     sa21 = ld_r ? text_in[ 79: 72] ^ w1[15: 8] : sa21_next;
-     sa11 = ld_r ? text_in[ 87: 80] ^ w1[23:16] : sa11_next;
-     sa01 = ld_r ? text_in[ 95: 88] ^ w1[31:24] : sa01_next;
-     sa30 = ld_r ? text_in[103:096] ^ w0[ 7: 0] : sa30_next;
-     sa20 = ld_r ? text_in[111:104] ^ w0[15: 8] : sa20_next;
-     sa10 = ld_r ? text_in[119:112] ^ w0[23:16] : sa10_next;
-     sa00 = ld_r ? text_in[127:120] ^ w0[31:24] : sa00_next;
+     sa33 = ld_r ? text_in_r[  7:  0] ^ w3[ 7: 0] : sa33_nnext;
+     sa23 = ld_r ? text_in_r[ 15:  8] ^ w3[15: 8] : sa23_nnext;
+     sa13 = ld_r ? text_in_r[ 23: 16] ^ w3[23:16] : sa13_nnext;
+     sa03 = ld_r ? text_in_r[ 31: 24] ^ w3[31:24] : sa03_nnext;
+     sa32 = ld_r ? text_in_r[ 39: 32] ^ w2[ 7: 0] : sa32_nnext;
+     sa22 = ld_r ? text_in_r[ 47: 40] ^ w2[15: 8] : sa22_nnext;
+     sa12 = ld_r ? text_in_r[ 55: 48] ^ w2[23:16] : sa12_nnext;
+     sa02 = ld_r ? text_in_r[ 63: 56] ^ w2[31:24] : sa02_nnext;
+     sa31 = ld_r ? text_in_r[ 71: 64] ^ w1[ 7: 0] : sa31_nnext;
+     sa21 = ld_r ? text_in_r[ 79: 72] ^ w1[15: 8] : sa21_nnext;
+     sa11 = ld_r ? text_in_r[ 87: 80] ^ w1[23:16] : sa11_nnext;
+     sa01 = ld_r ? text_in_r[ 95: 88] ^ w1[31:24] : sa01_nnext;
+     sa30 = ld_r ? text_in_r[103:096] ^ w0[ 7: 0] : sa30_nnext;
+     sa20 = ld_r ? text_in_r[111:104] ^ w0[15: 8] : sa20_nnext;
+     sa10 = ld_r ? text_in_r[119:112] ^ w0[23:16] : sa10_nnext;
+     sa00 = ld_r ? text_in_r[127:120] ^ w0[31:24] : sa00_nnext;
 
 //     $display("W0 W1 W2 W3 ", w0, " ", w1, " ", w2, " ", w3);
 //       $display("SA output: /LD ", ld, "/ ",
@@ -258,11 +258,11 @@ dp aes_top(in  rstaes      :   ns(1);
 //    	         sa01_mc, " ", sa11_mc, " ", sa21_mc, " ", sa31_mc, " ", 
 //    	         sa02_mc, " ", sa12_mc, " ", sa22_mc, " ", sa32_mc, " ", 
 //               sa03_mc, " ", sa13_mc, " ", sa23_mc, " ", sa33_mc);
-//     $display("SA_NEXT: ",
-//              sa00_next, " ", sa10_next, " ", sa20_next, " ", sa30_next, " ", 
-//    	        sa01_next, " ", sa11_next, " ", sa21_next, " ", sa31_next, " ", 
-//    	        sa02_next, " ", sa12_next, " ", sa22_next, " ", sa32_next, " ", 
-//    	        sa03_next, " ", sa13_next, " ", sa23_next, " ", sa33_next);
+//     $display("SA_NNEXT: ",
+//              sa00_nnext, " ", sa10_nnext, " ", sa20_nnext, " ", sa30_nnext, " ", 
+//    	        sa01_nnext, " ", sa11_nnext, " ", sa21_nnext, " ", sa31_nnext, " ", 
+//    	        sa02_nnext, " ", sa12_nnext, " ", sa22_nnext, " ", sa32_nnext, " ", 
+//    	        sa03_nnext, " ", sa13_nnext, " ", sa23_nnext, " ", sa33_nnext);
 	      
      // round permutations
      sa00_sr = sa00_sub;
@@ -283,24 +283,24 @@ dp aes_top(in  rstaes      :   ns(1);
      sa33_sr = sa32_sub;
 
      // add roundkey
-     sa00_next = sa00_mc ^ w0[31:24];
-     sa01_next = sa01_mc ^ w1[31:24];
-     sa02_next = sa02_mc ^ w2[31:24];
-     sa03_next = sa03_mc ^ w3[31:24];
-     sa10_next = sa10_mc ^ w0[23:16];
-     sa11_next = sa11_mc ^ w1[23:16];
-     sa12_next = sa12_mc ^ w2[23:16];
-     sa13_next = sa13_mc ^ w3[23:16];
-     sa20_next = sa20_mc ^ w0[15: 8];
-     sa21_next = sa21_mc ^ w1[15: 8];
-     sa22_next = sa22_mc ^ w2[15: 8];
-     sa23_next = sa23_mc ^ w3[15: 8];
-     sa30_next = sa30_mc ^ w0[ 7: 0];
-     sa31_next = sa31_mc ^ w1[ 7: 0];
-     sa32_next = sa32_mc ^ w2[ 7: 0];
-     sa33_next = sa33_mc ^ w3[ 7: 0];
+     sa00_nnext = sa00_mc ^ w0[31:24];
+     sa01_nnext = sa01_mc ^ w1[31:24];
+     sa02_nnext = sa02_mc ^ w2[31:24];
+     sa03_nnext = sa03_mc ^ w3[31:24];
+     sa10_nnext = sa10_mc ^ w0[23:16];
+     sa11_nnext = sa11_mc ^ w1[23:16];
+     sa12_nnext = sa12_mc ^ w2[23:16];
+     sa13_nnext = sa13_mc ^ w3[23:16];
+     sa20_nnext = sa20_mc ^ w0[15: 8];
+     sa21_nnext = sa21_mc ^ w1[15: 8];
+     sa22_nnext = sa22_mc ^ w2[15: 8];
+     sa23_nnext = sa23_mc ^ w3[15: 8];
+     sa30_nnext = sa30_mc ^ w0[ 7: 0];
+     sa31_nnext = sa31_mc ^ w1[ 7: 0];
+     sa32_nnext = sa32_mc ^ w2[ 7: 0];
+     sa33_nnext = sa33_mc ^ w3[ 7: 0];
 
-//     $display( "sa00next ",sa00_next," sa01next ",sa01_next," sa02_next ",sa02_next," sa03next ",sa03_next);
+//     $display( "sa00nnext ",sa00_nnext," sa01nnext ",sa01_nnext," sa02_nnext ",sa02_nnext," sa03nnext ",sa03_nnext);
 
      // final text output
      text_out00 = sa00_sr ^ w0[31:24];
@@ -349,25 +349,26 @@ dp testbench(out rstaes : ns(1);   out ld      : ns(1);   in done     : ns(1);
    sfg reset_0 { rstaes     = 0; }
    sfg ld_1    { ld      = 1; }
    sfg ld_0    { ld      = 0; }
-   always { key     = 0x000102030405060708090a0b0c0d0e0f;
-            text_in = 0x00112233445566778899aabbccddeeff;
-	    ddone   = done;
-	    dtext_out = text_out;
+   sfg first   { text_in = 0x00112233445566778899aabbccddeeff;}
+   sfg nnext    { text_in = done ? text_out : dtext_out; }
+   always {      key     = 0x000102030405060708090a0b0c0d0e0f;
+	         ddone   = done;
+	         dtext_out = done ? text_out : dtext_out;
           }
 }
 
 fsm ftestbench(testbench) {
   initial s0;
   state   s1, s2;
-  @s0 (reset_1, ld_0) -> s1;
-  @s1 (reset_0, ld_1) -> s2;
-  @s2 if (ddone) then (reset_0, ld_1) -> s2;
-                 else (reset_0, ld_0) -> s2;
+  @s0 (reset_1, ld_0, first) -> s1;
+  @s1 (reset_0, ld_1, first) -> s2;
+  @s2 if (ddone) then (reset_0, ld_1, nnext) -> s2;
+                 else (reset_0, ld_0, nnext) -> s2;
 }
 
 dp aes_sys {
   sig rstaes, ld, done       : ns(1);
-  sig key, text_in, text_out : ns(218);
+  sig key, text_in, text_out : ns(128);
   use testbench(rstaes, ld, done, key, text_in, text_out);
   use aes_top  (rstaes, ld, done, key, text_in, text_out);
 }

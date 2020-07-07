@@ -9,10 +9,9 @@ ipblock regipif(out Bus2IP_Data    : ns(32);
                 out Bus2IP_RdCE    : ns( 2); 
                 out Bus2IP_WrCE    : ns( 2); 
                 in  IP2Bus_Data    : ns(32);
-                in  IP2Bus_Ack     : ns( 1);
-                in  IP2Bus_Retry   : ns( 1);
-                in  IP2Bus_Error   : ns( 1);
-                in  IP2Bus_ToutSup : ns( 1)) {
+                in  IP2Bus_RdAck   : ns( 1);
+                in  IP2Bus_WrAck   : ns( 1);
+                in  IP2Bus_Error   : ns( 1)) {
    iptype "xilinx_ipif_reg";
    ipparm "core=arm";
    ipparm "regid=0x80000000"; // index for regs
@@ -54,18 +53,17 @@ fsm euclid_ctl(euclid) {
                                     shiftf)   -> s1;
 } 
 
-$option "generic user_logic C_DWIDTH integer 32"
-$option "generic user_logic C_NUM_CE integer 2"
+$option "generic user_logic C_SLV_DWIDTH integer 32"
+$option "generic user_logic C_NUM_REG integer 2"
 
 dp user_logic(in  Bus2IP_Data    : ns(32); 
               in  Bus2IP_BE      : ns( 4);  
               in  Bus2IP_RdCE    : ns( 2); 
               in  Bus2IP_WrCE    : ns( 2); 
               out IP2Bus_Data    : ns(32);
-              out IP2Bus_Ack     : ns( 1);
-              out IP2Bus_Retry   : ns( 1);
-              out IP2Bus_Error   : ns( 1);
-              out IP2Bus_ToutSup : ns( 1)) {
+              out IP2Bus_RdAck   : ns( 1);
+              out IP2Bus_WrAck   : ns( 1);
+              out IP2Bus_Error   : ns( 1)) {
 
    reg d1, d2    : tc(32);
    reg o1        : tc(32);
@@ -73,8 +71,9 @@ dp user_logic(in  Bus2IP_Data    : ns(32);
    sig ready     : ns(1);
    use euclid(m, n, ready, gcd);
 
-   reg ip2bus_d : ns(32);
-   reg ip2bus_a : ns(1);
+   reg ip2bus_d    : ns(32);
+   reg ip2bus_wr_a : ns(1);
+   reg ip2bus_rd_a : ns(1);
 
    always {
 
@@ -90,15 +89,14 @@ dp user_logic(in  Bus2IP_Data    : ns(32);
      ip2bus_d    = Bus2IP_RdCE[0] ? o1 : 0;
      IP2Bus_Data = ip2bus_d;
 
-     ip2bus_a    = Bus2IP_WrCE[0] | 
-		   Bus2IP_WrCE[1] | 
- 		   Bus2IP_RdCE[0] | 
+     ip2bus_wr_a = Bus2IP_WrCE[0] | 
+		   Bus2IP_WrCE[1];
+     ip2bus_rd_a = Bus2IP_RdCE[0] | 
 		   Bus2IP_RdCE[1];
-     IP2Bus_Ack  = ip2bus_a;
+     IP2Bus_WrAck = ip2bus_wr_a;
+     IP2Bus_RdAck = ip2bus_rd_a;
 
-     IP2Bus_Retry = 0;
      IP2Bus_Error = 0;
-     IP2Bus_ToutSup = 0;
    }
 }
 
@@ -108,10 +106,9 @@ dp top {
   sig Bus2IP_RdCE    : ns( 2); 
   sig Bus2IP_WrCE    : ns( 2); 
   sig IP2Bus_Data    : ns(32);
-  sig IP2Bus_Ack     : ns( 1); 
-  sig IP2Bus_Retry   : ns( 1); 
+  sig IP2Bus_RdAck   : ns( 1); 
+  sig IP2Bus_WrAck   : ns( 1); 
   sig IP2Bus_Error   : ns( 1); 
-  sig IP2Bus_ToutSup : ns( 1); 
 
   use arm;
 
@@ -120,20 +117,18 @@ dp top {
 	      Bus2IP_RdCE    ,
 	      Bus2IP_WrCE    ,
 	      IP2Bus_Data    ,
-	      IP2Bus_Ack     ,
-	      IP2Bus_Retry   ,
-	      IP2Bus_Error   ,
-	      IP2Bus_ToutSup );
+	      IP2Bus_RdAck   ,
+	      IP2Bus_WrAck   ,
+	      IP2Bus_Error   );
 
   use user_logic(Bus2IP_Data ,
 	      Bus2IP_BE      ,
 	      Bus2IP_RdCE    ,
 	      Bus2IP_WrCE    ,
 	      IP2Bus_Data    ,
-	      IP2Bus_Ack     ,
-	      IP2Bus_Retry   ,
-	      IP2Bus_Error   ,
-	      IP2Bus_ToutSup );
+	      IP2Bus_RdAck   ,
+	      IP2Bus_WrAck   ,
+	      IP2Bus_Error   );
 }
 
 system S {

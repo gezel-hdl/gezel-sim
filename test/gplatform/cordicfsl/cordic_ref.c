@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+extern unsigned long long getcyclecount();
+
 #define AG_CONST 163008218 /* 0.60725293510314 in <32,28> */
 #define PI 843314856       /* 3.141593.. in <32,28>       */
 #define UNIT 28            /* weight of LSB is 2^-UNIT    */
@@ -58,14 +60,16 @@ void cordic(int target, int *rX, int *rY) {
 int main(void) {
   fixed X, Y, target;
   fixed accsw, accfsl;
+  unsigned long long c0, c1;
 
-  accsw = 0;
-  for (target = 0; target < PI/2; target += (1 << (UNIT - 12))) {
-    cordic(target, &X, &Y);
-    accsw += (X + Y);
-  }
+  target = PI / 23;
 
-  printf("Checksum SW %x\n", accsw);
+  c0 = getcyclecount();
+  cordic(target, &X, &Y);
+  c1 = getcyclecount();
+
+  printf("Target %d X %d Y %d\n", target, X, Y);
+  printf("Cycles %lld\n", c1-c0);
 
   return(0); 
 }

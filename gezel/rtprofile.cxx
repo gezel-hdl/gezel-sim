@@ -20,11 +20,12 @@
 //--------------------------------------------------------------
 
 #include "rtprofile.h"
-#include <strstream>
+#include <cstdlib>
+#include <sstream>
 
 rtprofile *glbRTProfile = 0;
 
-rtprofile_op::rtprofile_op(bool _upedgeMode, vector<unsigned> &opweights) {
+rtprofile_op::rtprofile_op(bool _upedgeMode, vector<unsigned> &opweights, symid id) {
   v    = make_gval(32,0);
   vand = make_gval(32,0);
   vxor = make_gval(32,0);
@@ -37,6 +38,7 @@ rtprofile_op::rtprofile_op(bool _upedgeMode, vector<unsigned> &opweights) {
   zeroes     = 0;
   upedgeMode = _upedgeMode;
   weights    = opweights;
+  thesym     = id;
 }
 
 void rtprofile_op::hammingupdate(gval *nv) {
@@ -45,6 +47,12 @@ void rtprofile_op::hammingupdate(gval *nv) {
   //  cerr << "eval " << nv << "\n";
 
   unsigned long h = nv->popcount();
+
+    if (h) {
+      glbSymboltable.showsymbol(cerr,thesym);
+      cerr << "toggles - " << h << "\n";
+    }
+ 
   ones   += h; // WILL NOT WORK FOR NEGATIVE NUMBERS
   zeroes += nv->getwordlength() - h;
 
@@ -96,7 +104,7 @@ void rtprofile::include(string dp) {
 
 void rtprofile::toggleweights(string dp) {
   unsigned v;
-  istrstream ci(dp.c_str());
+  istringstream ci(dp.c_str());
   while (!ci.eof()) {
     ci >> v;
     if (! ci.fail()) 
@@ -108,7 +116,7 @@ void rtprofile::toggleweights(string dp) {
 
 void rtprofile::togglevariation(string dp) {
   unsigned v;
-  istrstream ci(dp.c_str());
+  istringstream ci(dp.c_str());
   while (!ci.eof()) {
     ci >> v;
     if (! ci.fail()) 
@@ -153,12 +161,16 @@ void rtprofile::makeop(symid id) {
     }
     //    for (unsigned i=0; i<opws.size(); i++) 
     //      cout << opws[i] << "\n";
-    ops[id] = new rtprofile_op(upedgeMode, opws);
+    ops[id] = new rtprofile_op(upedgeMode, opws, id);
   }
 }
 
 void rtprofile::evalop(symid id, gval *v) {
-  //    cerr << "evalop " << *v << "\n";
+  //  if (makeop_enable) {
+  //    glbSymboltable.showsymbol(cerr, id);
+  //    cerr << "--> " << makeop_enable << " evalop " << *v << "\n";
+  //  }
+
   if (id == NOSYMBOL) // is an intermediate symbol
     return;
 

@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: armsystem.h 78 2007-07-14 19:00:16Z schaum $
+// $Id: armsystem.h 146 2009-09-03 22:51:33Z schaum $
 //--------------------------------------------------------------
 
 #ifndef ARMSYSTEM_H
@@ -41,7 +41,8 @@ class armsystem : public aipblock {
   char          *simargv[32];
   int            period;
   int            period_cnt;
-  aipblock *slave_exec;
+  int            slave_count;
+  int            slave_count_init;
 public:
   armsystem(char *);
   void run();
@@ -214,5 +215,30 @@ class armsystemprobe : public aipblock {
   void write_device(int dev, unsigned long n);
   //  void touch();
 };
+
+//------------------------------------------------------------
+#include <queue>
+
+class armfifo : public aipblock {
+  int senddeviceid;
+  int receivedeviceid;
+  int sendstatusdeviceid;
+  int receivestatusdeviceid;
+  queue<unsigned> fifo;
+  unsigned fifosize;
+  simulator::arm_simulator *sendhook; 
+  simulator::arm_simulator *receivehook; 
+ public:
+  armfifo(char *name);
+  void setparm(char *_name);
+  void run();
+  bool checkterminal(int n, char *tname, aipblock::iodir d);
+  bool cannotSleepTest();
+  void write_device(int dev, unsigned long n);
+  unsigned long read_device(int dev);
+  //  void touch();
+};
+
+
 
 #endif

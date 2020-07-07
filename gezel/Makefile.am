@@ -10,7 +10,7 @@ AM_LFLAGS=-Pfdl -olex.yy.c
 lib_LTLIBRARIES = libfdl.la
 
 CORELIB = fdl.ll        \
-          fdlyacc.cc    \
+	  fdlyacc.cc    \
           artsignal.cxx \
           asymbol.cxx   \
           fdlcode.cxx   \

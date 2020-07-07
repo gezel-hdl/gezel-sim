@@ -25,6 +25,7 @@
 #include "rterror.h"
 #include "rtsleep.h"
 #include "rtopt.h"
+#include <cstdlib>
 
 rtsimgen::rtsimgen() {
   vcd = 0;
@@ -441,6 +442,10 @@ void rtsimgen::cgoption(symid v, char *option) {
     }
   } else if (string(option).find("generic") == 0) {
     // this is for vhdl code gen
+  } else if (string(option).find("attribute_def") == 0) {
+    // this is for vhdl code gen
+  } else if (string(option).find("attribute_use") == 0) {
+    // this is for vhdl code gen
   } else {
     cerr << "rtsimgen: option " << option << " is unsupported\n";
   }
@@ -609,6 +614,11 @@ void rtsimgen::cgdispstr(symid disp, char * var) {
 
 // SFG/ SIGNAL
 void rtsimgen::cgipblock(symid v, char *instname, char *tname) {
+
+  // exclude ipblock from toggle counting if not added by the profiler
+  if (glbRTProfile)
+    glbRTProfile->check_include(string(instname));
+
   if (glbIpblockcreate)
     iplist[v] = glbIpblockcreate(instname, tname);
   else {

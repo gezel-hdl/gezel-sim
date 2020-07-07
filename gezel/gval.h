@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: gval.h 83 2007-07-16 01:14:45Z schaum $
+// $Id: gval.h 113 2009-06-19 16:11:11Z schaum $
 //--------------------------------------------------------------
 
 #ifndef GVAL_H
@@ -42,13 +42,13 @@ class gval {
 
   void init_mask(unsigned w);
   void rescale();
-  void scaninit(char *bv);
+  void scaninit(const char *bv);
 
  public:
 
   gval(unsigned _wordlength, unsigned _sign);
-  gval(char *);
-  gval(unsigned _wordlength, unsigned _sign, char *valuestr);
+  gval(const char *);
+  gval(unsigned _wordlength, unsigned _sign, const char *valuestr);
   
   gval & operator = (const gval &  v);
   void valuecopy    (const gval &  v); // like 'operator =' without rescale()
@@ -95,12 +95,12 @@ class gval {
   void writestream(ostream &os);
   void writebuf   (char *buf);
 
-
+  string getbitstring();
 };  
 
 gval * make_gval(unsigned _wordlength, unsigned _sign);
-gval * make_gval(char *);
-gval * make_gval(unsigned _wordlength, unsigned _sign, char *valuestr);
+gval * make_gval(const char *);
+gval * make_gval(unsigned _wordlength, unsigned _sign, const char *valuestr);
 
 istream & operator >> (istream &is, gval &v);
 ostream & operator << (ostream &os, gval &v);

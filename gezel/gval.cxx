@@ -22,6 +22,8 @@
 #include "gval.h"
 #include "rtopt.h"
 #include <map>
+#include <cstdlib>
+#include <cstring>
 #include "gmp.h"
 
 map<int, int> wlenstats;
@@ -31,13 +33,13 @@ gval * make_gval(unsigned _wordlength, unsigned _sign) {
   return new gval(_wordlength, _sign);
 }
 
-gval * make_gval(char *v) {
+gval * make_gval(const char *v) {
   gval *r = new gval(v);
   wlenstats[r->getwordlength()]++;
   return r;
 }
 
-gval * make_gval(unsigned _wordlength, unsigned _sign, char *valuestr) {
+gval * make_gval(unsigned _wordlength, unsigned _sign, const char *valuestr) {
   wlenstats[_wordlength]++;
   return new gval(_wordlength, _sign, valuestr);
 }
@@ -66,12 +68,12 @@ ostream & operator << (ostream &os, gval &v) {
 //---------------------------------------------------------
 
 void gval::init_mask(unsigned w) {
-  mpz_set_ui(mask, 0L);
+  mpz_set_ui(mask,   0L);
   mpz_set_ui(mask_1, 0L);
-  mpz_setbit(mask, w);
-  mpz_sub_ui(mask, mask, 1L);
+  mpz_setbit(mask,   w);
+  mpz_sub_ui(mask,   mask, 1L);
   mpz_setbit(mask_1, w);
-  mpz_neg(mask_1, mask_1);
+  mpz_neg   (mask_1, mask_1);
   // next statements force allocation of sufficient space for
   // value at construction time. Otherwise, mpz_scan1 function
   // fails
@@ -98,7 +100,7 @@ gval::gval(unsigned _wordlength, unsigned _sign) :
   init_mask(wordlength);
 }
 
-void gval::scaninit(char *bv) {
+void gval::scaninit(const char *bv) {
   // create unsigned or signed mpzcl with wordlength as require to represen bv
   // which is in one of the following formats:
   // - decimal:     [0-9]+
@@ -122,7 +124,7 @@ void gval::scaninit(char *bv) {
   }
   
   // check base
-  char *buf;
+  const char *buf;
   if (bv[0] == '0') {
     if ((bv[1] == 'x') || (bv[1] == 'X')) {
       curbase = 16;
@@ -143,8 +145,12 @@ void gval::scaninit(char *bv) {
     mpz_init_set_str(value, bv, curbase);
   }
 
-  // allow 1 extra bit for sign
-  wordlength = (unsigned int) mpz_sizeinbase(value, 2) + 1;
+  // if this was a negative number, allow 1 extra bit for sign
+  if (sign)
+    wordlength = (unsigned int) mpz_sizeinbase(value, 2) + 1;
+  else
+    wordlength = (unsigned int) mpz_sizeinbase(value, 2) + 1;
+
   // cout << "inp " << bv << " wl " << wordlength << "\n";
   mpz_init(mask);
   mpz_init(mask_1);
@@ -163,11 +169,17 @@ void gval::scaninit(char *bv) {
  
 }
 
-gval::gval(char *bv) {
+string gval::getbitstring() {
+  char buf[wordlength+1];
+  mpz_get_str(buf, 2, value);
+  return string(buf);
+}
+
+gval::gval(const char *bv) {
   scaninit(bv);
 }
 
-gval::gval(unsigned _wordlength, unsigned _sign, char *valuestr) {
+gval::gval(unsigned _wordlength, unsigned _sign, const char *valuestr) {
   scaninit(valuestr);
   sign       = _sign;
   wordlength = _wordlength;
@@ -403,7 +415,9 @@ void gval::writestream(ostream &os) {
 void gval::dbgprint() const {
   char buf[4096];
   cerr << "gval obj @ " << this << "\n";
-  cerr << "     wl: " << wordlength << " sgn: " << sign << " curbase: " << curbase << "\n";
+  cerr << "     wl: " << wordlength;
+  cerr << " sgn: " << sign;
+  cerr << " curbase: " << curbase << "\n";
   mpz_get_str(buf,16, value);
   cerr << "     value: " << buf;
   mpz_get_str(buf,16, mask);

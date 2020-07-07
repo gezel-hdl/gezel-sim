@@ -24,6 +24,7 @@
 #include "rterror.h"
 #include "rtsleep.h"
 #include "ipuser.h"
+#include <cstdlib>
 
 //  #     #  #####  ####### ######
 //  #     # #     # #       #     #

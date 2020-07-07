@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: rterror.h 21 2005-11-15 19:08:03Z schaum $
+// $Id: rterror.h 104 2009-05-19 14:35:17Z schaum $
 //--------------------------------------------------------------
 
 #ifndef RTERROR_H
@@ -94,7 +94,7 @@ void fdlerror(int n, symid v);
 void fdlwarn (int n, symid v);
 void fdlerror(int n, symid v, symid v2);
 void fdlerror(int n, symid v, set<symid> &c);
-void fdlerror(int n, char *n2, int l);
+void fdlerror(int n, const char *n2, int l);
 void fdlerror(int n, const char *n2);
 
 #endif

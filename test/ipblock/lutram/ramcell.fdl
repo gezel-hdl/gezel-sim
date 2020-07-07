@@ -1,0 +1,30 @@
+// ram with synchronous write, asynchronous read
+
+ipblock r(in  we : ns(1);
+          in  ad : ns(3);
+          in  di : ns(8);
+          out do : ns(8)) {
+  iptype "lutram";
+}
+
+dp write_r {
+
+  reg ad_r : ns(3);
+  reg di_r : ns(3);
+  reg we_r : ns(1);
+  sig do   : ns(8);
+
+  use r(we_r, ad_r, di_r, do);
+
+  always {
+    ad_r = ad_r + 1;
+    di_r = di_r + 1;
+    we_r = we_r + 1;
+    $display($cycle, " ad ", ad_r, " we ", we_r, " di ", di_r, " do ", do);
+  }
+
+}
+
+system S {
+  write_r;
+}

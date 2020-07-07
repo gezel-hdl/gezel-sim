@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: fdlsym.cxx 36 2006-01-17 13:13:36Z schaum $
+// $Id: fdlsym.cxx 104 2009-05-19 14:35:17Z schaum $
 //--------------------------------------------------------------
 
 #include "fdlsym.h"
@@ -33,7 +33,7 @@
 //  }
 //}
 
-namesym::namesym(char *_staticname) {
+namesym::namesym(const char *_staticname) {
 //  symnamecopy(nm, _staticname);
 #ifdef MSC_VER
   nm = _strdup(_staticname);
@@ -50,7 +50,7 @@ void namesym::show(ostream &os) {
   os << nm;
 }
 
-bool namesym::matchname(char *s) {
+bool namesym::matchname(const char *s) {
   if (!strcmp(nm, s))
     return true;
   else
@@ -456,7 +456,7 @@ void lusym::findoperands(vector<symid> &ops) {
 }
 
 //--------------------------------------------------------------
-ctlsym::ctlsym(char *_staticname, symid _dp) : dp(_dp) {
+ctlsym::ctlsym(const char *_staticname, symid _dp) : dp(_dp) {
 //  symnamecopy(nm, _staticname);
 #ifdef MSC_VER
   nm = _strdup(_staticname);

@@ -20,6 +20,7 @@
 //--------------------------------------------------------------
 
 #include "rterror.h"
+#include <cstdlib>
 #include <iostream>
 
 void showerrortype(int n) {
@@ -268,7 +269,7 @@ void fdlerror(int n, symid v, set<symid> &xsect) {
   exit(0);
 }
 
-void fdlerror(int n, char *f, int l) {
+void fdlerror(int n, const char *f, int l) {
   cerr << "\n*** Error: ";
   showerrortype(n);
   cerr << "Context: (" << f << "," << l << ")\n";

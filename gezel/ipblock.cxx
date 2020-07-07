@@ -187,7 +187,7 @@ bool aipblock::isoutput(iodir d) {
   return (d == output);
 }
 
-bool aipblock::isname(char *n, char *n2) {
+bool aipblock::isname(char *n, const char *n2) {
   return (!strcmp(n,n2));
 }
 
@@ -195,7 +195,7 @@ bool aipblock::blockisname(char *n) {
   return (! strcmp(n,name));
 }
 
-char * aipblock::matchparm(char *orig, char *tgt) {
+char * aipblock::matchparm(char *orig, const char *tgt) {
   // find first char of tgt in orig
   while (((unsigned char) (*tgt)) != 0) {
     while (*orig && (*orig != *tgt))
@@ -223,7 +223,7 @@ char * aipblock::matchparm(char *orig, char *tgt) {
   return orig;
 }
 
-bool aipblock::matchparm(char *orig, char *tgt, gval &v) {
+bool aipblock::matchparm(char *orig, const char *tgt, gval &v) {
   char *val = matchparm(orig, tgt);
   if (val != 0) {
     gval *v2 = make_gval(val);

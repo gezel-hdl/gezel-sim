@@ -17,7 +17,7 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
  USA
  
-  $Id: fdl.ll 85 2007-07-24 20:44:13Z schaum $
+  $Id: fdl.ll 104 2009-05-19 14:35:17Z schaum $
   -------------------------------------------------------------- */
 
 /* 
@@ -35,6 +35,7 @@
 
 %option c++
 %option debug
+%option noyywrap
 
 /* lex spec for fsmd parser */
 %{
@@ -77,7 +78,7 @@
  
   string current_program_line;
 
-  void append_to_line(char *f) {
+  void append_to_line(const char *f) {
     current_program_line += string(f);
   }
 
@@ -91,13 +92,14 @@
     current_program_line = "";
   }
 
-#ifndef YY_SKIP_YYWRAP
-#ifdef __cplusplus
-extern "C" int yywrap( void );
-#else
-extern int yywrap( void );
-#endif
-#endif
+
+//#ifndef YY_SKIP_YYWRAP
+//#ifdef __cplusplus
+//extern "C" int yywrap( void );
+//#else
+//extern int yywrap( void );
+//#endif
+//#endif
 
 %}
 

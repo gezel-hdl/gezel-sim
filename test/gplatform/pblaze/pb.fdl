@@ -8,7 +8,7 @@ ipblock mypico (out port_id : ns(8);
                 in  reset : ns(1);
                 in  clk : ns(1)) {
     iptype "picoblaze";
-    ipparm "exec=SMALL.DEC";
+    ipparm "exec=small.dec";
     ipparm "verbose=0";
 }
 

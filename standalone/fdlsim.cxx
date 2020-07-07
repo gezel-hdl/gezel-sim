@@ -33,6 +33,7 @@
 
 using namespace std;
 
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -51,7 +52,7 @@ int main(int argc, char **argv) {
   glbUseGVALINT = 0;
   int floc = 1;
   long cycles = -1;
-  char *filearg = "stdin";
+  char *filearg = (char *) "stdin";
 
   glbIpblockcreate = stdipblockcreate;
 

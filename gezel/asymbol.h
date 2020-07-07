@@ -23,6 +23,7 @@
 #define ASYMBOL_H
 
 #include "fdlparse.h" 
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -41,7 +42,7 @@ class asym {
   enum reptype {tc, ns};
   asym();
   virtual ~asym() {}
-  virtual bool matchname(char *) {return false;}
+  virtual bool matchname(const char *) {return false;}
   virtual void show(ostream &os);
   virtual void showlex(ostream &os);
   virtual void relocate(symid id) {} // relocates symbol target to id (for hierarchy expansion)
@@ -224,7 +225,7 @@ class symbol {
   symid   srcline();
   bool    istype(_symtype _d) { return (d == _d); }
   _symtype type() {return d;}
-  static char *typestr(_symtype T);
+  static const char *typestr(_symtype T);
   void    show(ostream &os);
   static  void showheader(ostream &os);
 
@@ -241,7 +242,7 @@ class symboltable {
   typedef map<symid, symbol *> maps1;
   typedef maps1::iterator table_iter;
   typedef maps1::reverse_iterator table_riter;
-  symid   findtypedname(char *n, symbol::_symtype T);
+  symid   findtypedname(const char *n, symbol::_symtype T);
 
   bool    netsource(symid net, symid s);             // true if net driven by s
   bool    netsink  (symid net, symid s, symid &idx); // true if net sunken by s
@@ -254,7 +255,7 @@ class symboltable {
     }
   };
 
-  typedef map<char *, symid, idx_ltstr>    idx_type;
+  typedef map<const char *, symid, idx_ltstr>    idx_type;
 
   idx_type                                 idx_dpmap;   
   typedef idx_type::iterator               idx_dpmap_it;
@@ -269,7 +270,7 @@ class symboltable {
   ~symboltable       ();
   symid topsymbol    ();
   bool append        (symbol *);
-  void idx_markdp    (char *, symid);
+  void idx_markdp    (const char *, symid);
   void idx_markcomsig(symid, char *, symid);
   void show          (ostream &os);
   void showsymbol    (ostream &os, symid id);
@@ -280,18 +281,18 @@ class symboltable {
   void clone_ipblock(symid datapath, symid base); // for ipblock
 
   // QUERY
-  symid findlocalsig (char *n, symid sfgcontext);
-  symid findcomsig   (char *n, symid dpcontext);
-  symid findsigdef   (char *n, symid sfgcontext, symid dpcontext);
-  symid findsfg_backward(char *n, symid fdl_datapath);
-  symid findsfg_forward(char *n, symid fdl_datapath);
-  symid findincdp    (char *n, symid fdl_datapath);
-  symid findincdp    (char *n);
-  symid findstate    (char *n, symid fsmcontext);
-  symid finddp       (char *n);
-  symid findctl      (char *n);
-  symid findsystem   (char *n);
-  symid findnet      (char *n);
+  symid findlocalsig (const char *n, symid sfgcontext);
+  symid findcomsig   (const char *n, symid dpcontext);
+  symid findsigdef   (const char *n, symid sfgcontext, symid dpcontext);
+  symid findsfg_backward(const char *n, symid fdl_datapath);
+  symid findsfg_forward(const char *n, symid fdl_datapath);
+  symid findincdp    (const char *n, symid fdl_datapath);
+  symid findincdp    (const char *n);
+  symid findstate    (const char *n, symid fsmcontext);
+  symid finddp       (const char *n);
+  symid findctl      (const char *n);
+  symid findsystem   (const char *n);
+  symid findnet      (const char *n);
   symid findactparm  (int n, symid dpcontext);
   symid findtype     (symid sidid);
   void  findlutable  (symid v, vector<char *> &lucontent);

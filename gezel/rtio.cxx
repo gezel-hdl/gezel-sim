@@ -24,6 +24,7 @@
 #include "rterror.h"
 #include "rtsleep.h"
 #include "rtopt.h"
+#include <cstdlib>
 
 //----------------------------------------------------
 rtoutput::rtoutput(rtdpcontext &_rtdpc, symid _id, int wlen, int sign) :
@@ -42,15 +43,18 @@ void rtoutput::defdriver(artsignal* _driver) {
 }
 
 gval & rtoutput::eval(unsigned long g) {
+  //  cerr << "out_eval\n";
   gval & rv = s.eval(g);
   return rv;
 }
 
 void rtoutput::asgn(gval &nv) {
+  //  cerr << "out_asgn\n";
   s.asgn(nv);
 }
  
 gval& rtoutput::peekval() {
+  cerr << "out_peekval\n";
   return s.peekval();
 }
 

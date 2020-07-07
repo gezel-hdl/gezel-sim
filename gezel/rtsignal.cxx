@@ -130,6 +130,8 @@ unsigned rtsignal::signreq() {
 }
 
 bool rtsignal::hasdef() {
+  if (driver) 
+    return true;
   return context.hasdef();
 }
 

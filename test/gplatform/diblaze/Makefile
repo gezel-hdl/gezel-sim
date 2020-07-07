@@ -1,11 +1,13 @@
+include ../../Makefile.cfg
+
 RUN=pb.fdl
 CYCLES=1000
-RECEIVER=RECEIVER
-SENDER=SENDER
-PB_OBJ=$(SENDER).DEC $(RECEIVER).DEC
+RECEIVER=receiver
+SENDER=sender
+PB_OBJ=$(SENDER).dec $(RECEIVER).dec
 
-%.DEC: %.psm
-	wine /opt/KCPSM3/Assembler/KCPSM3.EXE $<
+%.dec: %.psm
+	$(PICOASM) $<
 
 all: $(PB_OBJ)
 
@@ -13,7 +15,7 @@ sim: $(PB_OBJ) $(RUN)
 	$(GPLATFORM) -c $(CYCLES) $(RUN)
 
 clean:
-	rm -f *~ PASS*.DAT LABELS.TXT CONSTANT.TXT *.DEC *.FMT *.HEX *.LOG *.M *.MEM \
-$(SENDER).COE $(SENDER).V $(SENDER).VHD \
-$(RECEIVER).COE $(RECEIVER).V $(RECEIVER).VHD
+	rm -f *~ pass*.dat labels.txt constant.txt *.dec *.fmt *.hex *.log *.m *.mem \
+$(SENDER).coe $(SENDER).v $(SENDER).vhd \
+$(RECEIVER).coe $(RECEIVER).v $(RECEIVER).vhd
 

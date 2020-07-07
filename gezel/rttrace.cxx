@@ -20,6 +20,7 @@
 //--------------------------------------------------------------
 
 #include "rttrace.h"
+#include <cstdlib>
 
 //-----------------------------------------------------
 
@@ -86,7 +87,7 @@ void tracerblock::eval(unsigned long C) {
 
 //-----------------------------------------------------
 
-vcddumper::vcddumper (char*_fname) :
+vcddumper::vcddumper (const char*_fname) :
   fname(_fname), os(_fname)  {
   if (os.fail()) {
     cout << "Error: Unable to open file " << fname << " for writing\n";

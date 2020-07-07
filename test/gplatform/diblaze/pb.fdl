@@ -9,7 +9,7 @@ ipblock mypico_A (
               in  reset : ns(1);
               in  clk : ns(1)) {
   iptype "picoblaze";
-  ipparm "exec=SENDER.DEC";  
+  ipparm "exec=sender.dec";  
 }
 
 ipblock mypico_B (
@@ -23,7 +23,7 @@ ipblock mypico_B (
               in  reset : ns(1);
               in  clk : ns(1)) {
   iptype "picoblaze";
-  ipparm "exec=RECEIVER.DEC";  
+  ipparm "exec=receiver.dec";  
 }
 
 dp mappedreg_60(in  d   : ns(8);

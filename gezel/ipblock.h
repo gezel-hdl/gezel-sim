@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: ipblock.h 78 2007-07-14 19:00:16Z schaum $
+// $Id: ipblock.h 104 2009-05-19 14:35:17Z schaum $
 //--------------------------------------------------------------
 
 #ifndef IPBLOCK_H
@@ -101,9 +101,9 @@ class aipblock {
   enum iodir {input, output};
   bool isinput  (iodir d);
   bool isoutput (iodir d);
-  bool isname   (char *, char *n);
-  char * matchparm(char *orig, char *tgt);
-  bool matchparm(char *orig, char *tgt, gval &v);
+  bool isname   (char *, const char *n);
+  char * matchparm(char *orig, const char *tgt);
+  bool matchparm(char *orig, const char *tgt, gval &v);
 
  public:
 

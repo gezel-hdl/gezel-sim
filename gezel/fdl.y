@@ -506,6 +506,9 @@ symid add_control_step(symid c /* condition symbol */, int &refcnt, symid ctl) {
 %type <shash>   postfix_expr;
 %type <shash>   sig_type;
 %type <shash>   transition_condition;
+%type <shash>   nonrecursive_primary_expr;
+%type <shash>   useport_postfix_expr;
+
 %start fdl_description
 
 %%
@@ -1522,7 +1525,7 @@ dp_inc_pin_list : dp_inc_pin_postfix
                  | dp_inc_pin_list COMMA dp_inc_pin_postfix
                  ;
 
-dp_inc_pin_postfix : primary_expr {
+dp_inc_pin_postfix : useport_postfix_expr {
 /*
                 symbol *sym = new symbol(new refsym($1), symbol::dpc_arg, fdl_inc_datapath);
                 glbSymboltable.append(sym);
@@ -1824,7 +1827,13 @@ rangeexp: ct_eval_conditional_expr {
         }
         ;
 
-primary_expr: ID {
+primary_expr: nonrecursive_primary_expr
+        | RBRACKET_OPEN expr RBRACKET_CLOSE {
+	    $$ = $2;
+         }
+        ;
+
+nonrecursive_primary_expr: ID {
          symid rval = glbSymboltable.findsigdef($1, fdl_sfg, fdl_datapath);
          if (rval == NOSYMBOL) {
              sprintf(fdl_error_message,
@@ -1855,9 +1864,6 @@ primary_expr: ID {
       	  glbSymboltable.append(s);
 	  /* printf("*%s*\n", $1); */
           $$ = s->id();
-         }
-        | RBRACKET_OPEN expr RBRACKET_CLOSE {
-	    $$ = $2;
          }
         ;
 
@@ -1890,6 +1896,25 @@ string_term: string_term QSTRING {
 	       }
              }
              ;
+
+/* --------------- arguments for 'use' ports ---------------
+
+   use thedp(port1, port2[3], port3[3:2]);
+
+   general expressions as ports work as well but are currently 
+   not handled by the VHDL codegenerator. so therefore only the 
+   restricted case as above is supported for now
+
+   ------------------------------------------------------ */   
+
+useport_postfix_expr: nonrecursive_primary_expr
+           | useport_postfix_expr { fdl_base = $1; } BRACKET_OPEN rangeexp BRACKET_CLOSE {
+              int ib = (fdl_index1 > fdl_index2) ? fdl_index2 : fdl_index1;
+              int ie = (fdl_index1 > fdl_index2) ? fdl_index1 : fdl_index2;
+              symbol *sym = new symbol(new indexsym(ib, ie-ib+1, fdl_base), symbol::index, fdl_base);
+              glbSymboltable.append(sym);
+	      $$ = sym->id(); } 
+           ;
 
 /* ------------ Type declarations ------------- */
 
