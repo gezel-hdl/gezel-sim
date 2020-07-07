@@ -1,9 +1,19 @@
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(standalone/fdlsim.cxx)
-AM_INIT_AUTOMAKE(gezel, 2.4)
+AM_INIT_AUTOMAKE(gezel, 2.5)
+
+#AM_CONFIG_HEADER([gplatform/atmega_config.h])
 
 AC_PREFIX_DEFAULT("`pwd`/build")
+
+#Sachin path info
+confdir="${datadir}/gplatform/config"
+devicedir="${datadir}/gplatform/devices"
+AC_SUBST(confdir, ${confdir})
+AC_SUBST(devicedir, ${devicedir})
+
+#Sachin end
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -15,10 +25,12 @@ AC_PROG_LIBTOOL
 # Check for gmp
 AC_CHECK_LIB(gmp, __gmpz_init, , [AC_MSG_ERROR([GNU Multiprecision Library is required])])
 
-
 AC_ARG_ENABLE(standalone,
     [  --enable-standalone            build standalone simulator/ code generator [default=no]],
     standaloneenable=yes,standaloneenable=no)
+
+# Check for xml
+#AM_PATH_XML2(,,AC_MSG_ERROR([*** libxml2 not installed - please install first ***]))
 
 AM_CONDITIONAL([BUILDSTANDALONE], [test "$standaloneenable" = yes])
 
@@ -48,6 +60,22 @@ fi;
 if test "$needsimit" != "no"; then
    CPPFLAGS="$CPPFLAGS -I$simitsrc/include";
    LDFLAGS="$LDFLAGS -L$simitsrc/lib";
+fi;
+
+needsimulavr=no;
+if test "$gplatformenable" != "no"; then
+   needsimulavr=yes;
+fi;
+if test "$needsimulavr" != "no"; then
+   simulavrsrc=
+   AC_ARG_WITH(simulavr,
+     [  --with-simulavr           Specify location of SimulAVR installation],
+     [simulavrsrc="$withval"])
+fi;
+
+if test "$needsimit" != "no"; then
+   CPPFLAGS="$CPPFLAGS -I$simulavrsrc/include";
+   LDFLAGS="$LDFLAGS -L$simulavrsrc/lib";
 fi;
 
 AC_ARG_ENABLE(simitsfu,
@@ -83,14 +111,21 @@ dnl Checks for header files.
 
 CXX_COMP=`basename $CXX`
 
-case "$CXX_COMP" in
-	c++ | g++)
-#		CXXFLAGS="-Wall -g -pg"
-		CXXFLAGS="-Wall -O3 -fomit-frame-pointer"
-		;;
-	*)
-		;;
-esac
+AC_ARG_ENABLE(debug,
+    [  --enable-debug                 Compile with debug information [default=no]],
+    debugenable=yes,debugenable=no)
+
+CXXFLAGS="-Wall -O3 -fomit-frame-pointer"
+if test "$debugenable" != "no"; then
+   CXXFLAGS="-Wall -g -pg"
+fi;
+
+#Sachin
+AC_SUBST(SOEXT, "so")
+AC_SUBST(SOCFLAGS, "-fPIC")
+AC_SUBST(CC_SHAREDFLAG, "-shared")
+AC_DEFINE_UNQUOTED(SOEXT,"${SOEXT}",[What this platform's library file extension is])
+#Sachin
 
 CXXFLAGS="$CXXFLAGS $XCXXFLAGS"
 
@@ -104,4 +139,5 @@ using std::ostringstream;
 AC_DEFINE(HAVE_SSTREAM,,[define if the compiler has stringstream]), )
 
 # AC_OUTPUT(Makefile gezel/Makefile ipblock/Makefile systemc/Makefile  po/Makefile.in m4/Makefile java/Makefile standalone/Makefile gplatform/Makefile)
-AC_OUTPUT(Makefile gezel/Makefile ipblock/Makefile systemc/Makefile  m4/Makefile java/Makefile standalone/Makefile gplatform/Makefile)
+# AC_CONFIG_FILES([gplatform/devices/Makefile])
+AC_OUTPUT(Makefile gezel/Makefile ipblock/Makefile systemc/Makefile  m4/Makefile java/Makefile standalone/Makefile gplatform/Makefile ghost/Makefile)

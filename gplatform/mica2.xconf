@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration title="Common MICA2 features"
+        xmlns="http://www.cshcn.umd.edu/research/atemu/">
+    <!-- Include the AVR Atmel128L processor description -->
+    <include href="atmel128">
+        <!-- Frequency of main system clock -->
+        <param name="oscillator" value="7.3728MHz" />
+        <!-- Frequency of TIMER0's asynchronous clock -->
+        <param name="asynccrystal" value="32kHz" />
+    </include>
+
+    <!-- Include the LEDs -->
+    <message text="LED: Red Green Yellow" />
+    <device id="Red" module="led">
+        <register name="direction" ref="DDRA" bits="0x04" />
+        <register name="port" ref="PORTA" bits="0x04" />
+        <register name="pin" ref="PINA" bits="0x04" />
+    </device>
+    <device id="Green" module="led">
+        <register name="direction" ref="DDRA" bits="0x02" />
+        <register name="port" ref="PORTA" bits="0x02" />
+        <register name="pin" ref="PINA" bits="0x02" />
+    </device>
+    <device id="Yellow" module="led">
+        <register name="direction" ref="DDRA" bits="0x01" />
+        <register name="port" ref="PORTA" bits="0x01" />
+        <register name="pin" ref="PINA" bits="0x01" />
+    </device>
+
+    <!-- The Radio -->
+    <device id="radio" module="radio">
+        <!-- Connect the normal registers -->
+        <register name="ddrd" ref="DDRD" bits="0xD0" />
+        <register name="portd" ref="PORTD" bits="0xD0" />
+        <register name="pind" ref="PIND" bits="0xD0" />
+        <!-- Connect with the other devices -->
+        <!-- NOTE: Consider this interface deprecated as it may change once
+          - XCONF is completed -->
+        <connect name="spi" ref="spi" />
+        <connect name="adc" ref="adc" />
+        <!-- Parameters, will be deprecated once XRUN is completed -->
+        <!-- Standard deviation of the noise to add to the RSSI reading.
+          - TinyOS will halt communications if it is not noisy. -->
+        <param name="rssinoise" value="0.1" />
+        <!-- Noise level for calculating bit error rate in dBm -->
+        <param name="radionoise" value="-117" />
+        <!-- Constant attenuation to tack onto radio transimissions to correct
+          - range problems.  In dBm. -->
+        <param name="attenuate" value="-37" />
+    </device>
+
+</configuration>

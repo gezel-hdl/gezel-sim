@@ -1,6 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003 Patrick Schaumont (schaum@ee.ucla.edu)                   
-// University of California at Los Angeles
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -17,7 +16,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: ipuser.h,v 1.1.1.1 2005/07/14 17:32:44 schaum Exp $
 //--------------------------------------------------------------
 
 #ifndef IPUSER_H

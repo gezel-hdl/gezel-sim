@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003-2005 P. Schaumont, D. Ching 
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -16,7 +16,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id$
 //--------------------------------------------------------------
 
 #include "rtprofile.h"
@@ -48,10 +47,10 @@ void rtprofile_op::hammingupdate(gval *nv) {
 
   unsigned long h = nv->popcount();
 
-    if (h) {
-      glbSymboltable.showsymbol(cerr,thesym);
-      cerr << "toggles - " << h << "\n";
-    }
+  //    if (h) {
+  //      glbSymboltable.showsymbol(cerr,thesym);
+  //      cerr << "toggles - " << h << "\n";
+  //   }
  
   ones   += h; // WILL NOT WORK FOR NEGATIVE NUMBERS
   zeroes += nv->getwordlength() - h;

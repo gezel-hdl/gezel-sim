@@ -1,5 +1,13 @@
-Patch for 2.2 by Tim Watson
+May 25 2010 - release gezel 2.5
 
+  Port to latest gcc, Ubuntu 9.1 and 10.04
+  Release source code for vhdl code gen
+
+Sep 29 2009 - release gezel 2.4
+
+  Bug fixes in simulator (ARM SFU)
+  Repackaged for debian-style release
+  Port source code to latest gcc (4.3.3) and Ubuntu 9.04 
 
 Jan 11 2008 - release gezel 2.3
 

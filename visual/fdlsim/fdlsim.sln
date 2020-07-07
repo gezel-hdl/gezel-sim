@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fdlsim", "fdlsim.vcproj", "{3CEAC2CD-1D55-445A-97E5-F8FDFBA9213D}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gplatform", "..\gplatform\gplatform.vcproj", "{8345EA43-E7D6-46D7-90B2-EE441734A87E}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{3CEAC2CD-1D55-445A-97E5-F8FDFBA9213D}.Debug.ActiveCfg = Debug|Win32
+		{3CEAC2CD-1D55-445A-97E5-F8FDFBA9213D}.Debug.Build.0 = Debug|Win32
+		{3CEAC2CD-1D55-445A-97E5-F8FDFBA9213D}.Release.ActiveCfg = Release|Win32
+		{3CEAC2CD-1D55-445A-97E5-F8FDFBA9213D}.Release.Build.0 = Release|Win32
+		{8345EA43-E7D6-46D7-90B2-EE441734A87E}.Debug.ActiveCfg = Debug|Win32
+		{8345EA43-E7D6-46D7-90B2-EE441734A87E}.Debug.Build.0 = Debug|Win32
+		{8345EA43-E7D6-46D7-90B2-EE441734A87E}.Release.ActiveCfg = Release|Win32
+		{8345EA43-E7D6-46D7-90B2-EE441734A87E}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

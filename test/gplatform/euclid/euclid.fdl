@@ -11,8 +11,6 @@ dp euclid(in  m_in, n_in : ns(32);
   reg ld                 : ns(1);
   reg done               : ns(1);
 
-  $trace(m, "m.txt");
-
   sfg load    { ld = c_ld; m = m_in; n = n_in; }
   sfg init    { factor = 0; done = 0;}
   sfg flags   { done = ((m == 0) | (n == 0));  }

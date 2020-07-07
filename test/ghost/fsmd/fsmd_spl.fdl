@@ -1,0 +1,101 @@
+
+//--------------------------------------------------
+
+// SHAVITE encapsulation for Nallatech SPL interface
+
+//--------------------------------------------------
+
+ipblock nalla( out rx_data             : ns(256); 
+               out rx_data_valid       : ns(1);   
+               out rx_data_empty       : ns(1);
+               in  rx_data_read        : ns(1);
+               in  tx_data             : ns(256);
+               in  tx_data_valid       : ns(1);
+               out tx_data_almost_full : ns(1)) {
+  iptype "nalla_spl";
+  ipparm "socket=0";
+}
+
+// read two blocks; swap them; write them
+
+dp fsmd_spl( in   rx_data             : ns(256); 
+             in   rx_data_valid       : ns(  1);   
+             in   rx_data_empty       : ns(  1);
+             out  rx_data_read        : ns(  1);
+
+             out  tx_data             : ns(256);
+             out  tx_data_valid       : ns(  1);
+             in   tx_data_almost_full : ns(  1)) {
+
+  reg r1 : ns(256);
+  reg r2 : ns(256);
+
+  reg r_rx_data_empty : ns(1);
+
+  always {
+    r_rx_data_empty = rx_data_empty;
+  }
+
+  sfg read {
+//    $display("read ", rx_data);
+    r2            = r1;
+    r1            = rx_data;
+    rx_data_read  = 1;
+    tx_data_valid = 0;
+    tx_data       = 0;
+  }
+
+  sfg write {
+//    $display("write ", tx_data);
+    r1            = r2;
+    rx_data_read  = 0;
+    tx_data_valid = 1;
+    tx_data       = r1;
+  }
+
+  sfg idle {
+    rx_data_read  = 0;
+    tx_data_valid = 0;
+    tx_data       = 0;
+  }
+}
+fsm ctl_fsmd_spl(fsmd_spl) {
+  initial s0;
+  state s1, s2, s3;
+
+  @s0 if (~r_rx_data_empty) then (read) -> s1;
+                            else (idle) -> s0;
+
+  @s1 if (~r_rx_data_empty) then (read) -> s2;
+                            else (idle) -> s1;
+
+  @s2 (write) -> s3;
+
+  @s3 (write) -> s0;
+
+}
+
+//-------------------------------------------------------------
+
+dp top {
+   sig  rx_data             : ns(256); 
+   sig  rx_data_valid       : ns(1);   
+   sig  rx_data_empty       : ns(1);
+   sig  rx_data_read        : ns(1);
+
+   sig  tx_data             : ns(256);
+   sig  tx_data_valid       : ns(1);
+   sig  tx_data_almost_full : ns(1);
+
+   use nalla         (rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+                      tx_data, tx_data_valid, tx_data_almost_full); 
+   use fsmd_spl      (rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+                      tx_data, tx_data_valid, tx_data_almost_full); 
+
+   always {}
+
+}
+
+system S {
+  top;
+}

@@ -1,0 +1,748 @@
+// ************************************************ //
+//       High-Speed Implementation of SHAvite-3     //  
+//               File Name : shavite_b2b.fdl        // 
+//                 Version : 1.0                    // 
+//             Last Update : 10/03/11               // 
+//        Copyright (c) ESAT/COSIC KU Leuven        //
+//              All Rights Reserved.                //
+//          presented by Miroslav Knezevic          //
+// ************************************************ //
+
+dp sbox_us00(in din : ns(8); out dout : ns(8)) {
+
+  lookup T : ns(9) = {
+  99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118, 
+  202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 
+  183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21, 
+    4, 199,  35, 195,  24, 150,   5, 154,   7,  18, 128, 226, 235,  39, 178, 117, 
+    9, 131,  44,  26,  27, 110,  90, 160,  82,  59, 214, 179,  41, 227,  47, 132, 
+   83, 209,   0, 237,  32, 252, 177,  91, 106, 203, 190,  57,  74,  76,  88, 207, 
+  208, 239, 170, 251,  67,  77,  51, 133,  69, 249,   2, 127,  80,  60, 159, 168, 
+   81, 163,  64, 143, 146, 157,  56, 245, 188, 182, 218,  33,  16, 255, 243, 210, 
+  205,  12,  19, 236,  95, 151,  68,  23, 196, 167, 126,  61, 100,  93,  25, 115, 
+   96, 129,  79, 220,  34,  42, 144, 136,  70, 238, 184,  20, 222,  94,  11, 219, 
+  224,  50,  58,  10,  73,   6,  36,  92, 194, 211, 172,  98, 145, 149, 228, 121, 
+  231, 200,  55, 109, 141, 213,  78, 169, 108,  86, 244, 234, 101, 122, 174,   8, 
+  186, 120,  37,  46,  28, 166, 180, 198, 232, 221, 116,  31,  75, 189, 139, 138, 
+  112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158, 
+  225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223, 
+  140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22};
+
+  sfg run {
+    dout = T(din);
+  }
+}
+
+hardwired sbox_ctl (sbox_us00) {run;}
+
+dp sbox_us01 : sbox_us00   
+dp sbox_us02 : sbox_us00   
+dp sbox_us03 : sbox_us00   
+dp sbox_us10 : sbox_us00   
+dp sbox_us11 : sbox_us00   
+dp sbox_us12 : sbox_us00   
+dp sbox_us13 : sbox_us00   
+dp sbox_us20 : sbox_us00   
+dp sbox_us21 : sbox_us00   
+dp sbox_us22 : sbox_us00   
+dp sbox_us23 : sbox_us00   
+dp sbox_us30 : sbox_us00   
+dp sbox_us31 : sbox_us00   
+dp sbox_us32 : sbox_us00   
+dp sbox_us33 : sbox_us00    
+  
+
+dp aes_mix_col_0(in  s0     : ns(8);
+                 in  s1     : ns(8);
+                 in  s2     : ns(8);
+                 in  s3     : ns(8);
+                 out s0_o : ns(8);
+                 out s1_o : ns(8);
+                 out s2_o : ns(8);
+                 out s3_o : ns(8)) {
+   sig fpr : ns(8);
+   sfg run {
+    fpr = 0x1b;
+    s0_o = (s0 << 1) ^ (s0[7] ? fpr : 0) ^ (s1 << 1) ^ (s1[7] ? fpr : 0) ^ s1 ^ s2 ^ s3;
+    s1_o = (s1 << 1) ^ (s1[7] ? fpr : 0) ^ (s2 << 1) ^ (s2[7] ? fpr : 0) ^ s0 ^ s2 ^ s3;
+    s2_o = (s2 << 1) ^ (s2[7] ? fpr : 0) ^ (s3 << 1) ^ (s3[7] ? fpr : 0) ^ s0 ^ s1 ^ s3;
+    s3_o = (s3 << 1) ^ (s3[7] ? fpr : 0) ^ (s0 << 1) ^ (s0[7] ? fpr : 0) ^ s0 ^ s1 ^ s2;
+   }
+} 
+
+hardwired aes_mix_col_0_ctl (aes_mix_col_0) {run;}
+
+dp aes_mix_col_1 : aes_mix_col_0    
+dp aes_mix_col_2 : aes_mix_col_0    
+dp aes_mix_col_3 : aes_mix_col_0     
+
+
+dp aes_round_key_first(in  key      : ns(128);
+                       in  data_in  : ns(128);
+                       out data_out : ns(128)) 
+{
+  sig w0, w1, w2, w3 : ns(32);
+  sig sa00, sa01, sa02, sa03 : ns(8);
+  sig sa10, sa11, sa12, sa13 : ns(8);
+  sig sa20, sa21, sa22, sa23 : ns(8);
+  sig sa30, sa31, sa32, sa33 : ns(8);
+  sig sa00_next, sa01_next, sa02_next, sa03_next : ns(8);
+  sig sa10_next, sa11_next, sa12_next, sa13_next : ns(8);
+  sig sa20_next, sa21_next, sa22_next, sa23_next : ns(8);
+  sig sa30_next, sa31_next, sa32_next, sa33_next : ns(8);
+  sig sa00_sub, sa01_sub, sa02_sub, sa03_sub : ns(8);
+  sig sa10_sub, sa11_sub, sa12_sub, sa13_sub : ns(8);
+  sig sa20_sub, sa21_sub, sa22_sub, sa23_sub : ns(8);
+  sig sa30_sub, sa31_sub, sa32_sub, sa33_sub : ns(8);
+  sig sa00_sr, sa01_sr, sa02_sr, sa03_sr : ns(8);
+  sig sa10_sr, sa11_sr, sa12_sr, sa13_sr : ns(8);
+  sig sa20_sr, sa21_sr, sa22_sr, sa23_sr : ns(8);
+  sig sa30_sr, sa31_sr, sa32_sr, sa33_sr : ns(8);
+  sig sa00_mc, sa01_mc, sa02_mc, sa03_mc : ns(8);
+  sig sa10_mc, sa11_mc, sa12_mc, sa13_mc : ns(8);
+  sig sa20_mc, sa21_mc, sa22_mc, sa23_mc : ns(8);
+  sig sa30_mc, sa31_mc, sa32_mc, sa33_mc : ns(8);
+  sig data_out00, data_out01, data_out02, data_out03 : ns(8);
+  sig data_out04, data_out05, data_out06, data_out07 : ns(8);
+  sig data_out08, data_out09, data_out10, data_out11 : ns(8);
+  sig data_out12, data_out13, data_out14, data_out15 : ns(8); 
+
+  use sbox_us00(sa00,sa00_sub);
+  use sbox_us01(sa01,sa01_sub);
+  use sbox_us02(sa02,sa02_sub);
+  use sbox_us03(sa03,sa03_sub);
+  use sbox_us10(sa10,sa10_sub);
+  use sbox_us11(sa11,sa11_sub);
+  use sbox_us12(sa12,sa12_sub);
+  use sbox_us13(sa13,sa13_sub);
+  use sbox_us20(sa20,sa20_sub);
+  use sbox_us21(sa21,sa21_sub);
+  use sbox_us22(sa22,sa22_sub);
+  use sbox_us23(sa23,sa23_sub);
+  use sbox_us30(sa30,sa30_sub);
+  use sbox_us31(sa31,sa31_sub);
+  use sbox_us32(sa32,sa32_sub);
+  use sbox_us33(sa33,sa33_sub); 
+
+  use aes_mix_col_0(sa00_sr,sa10_sr,sa20_sr,sa30_sr,sa00_mc,sa10_mc,sa20_mc,sa30_mc);
+  use aes_mix_col_1(sa01_sr,sa11_sr,sa21_sr,sa31_sr,sa01_mc,sa11_mc,sa21_mc,sa31_mc);
+  use aes_mix_col_2(sa02_sr,sa12_sr,sa22_sr,sa32_sr,sa02_mc,sa12_mc,sa22_mc,sa32_mc);
+  use aes_mix_col_3(sa03_sr,sa13_sr,sa23_sr,sa33_sr,sa03_mc,sa13_mc,sa23_mc,sa33_mc); 
+
+  sfg run {
+
+     // SubBytes + AddRoundKey
+     w0 = key[127: 96];
+     w1 = key[ 95: 64];
+     w2 = key[ 63: 32];
+     w3 = key[ 31:  0];
+
+     sa33 = data_in[  7:  0] ^ w3[ 7: 0];
+     sa23 = data_in[ 15:  8] ^ w3[15: 8];
+     sa13 = data_in[ 23: 16] ^ w3[23:16];
+     sa03 = data_in[ 31: 24] ^ w3[31:24];
+     sa32 = data_in[ 39: 32] ^ w2[ 7: 0];
+     sa22 = data_in[ 47: 40] ^ w2[15: 8];
+     sa12 = data_in[ 55: 48] ^ w2[23:16];
+     sa02 = data_in[ 63: 56] ^ w2[31:24];
+     sa31 = data_in[ 71: 64] ^ w1[ 7: 0];
+     sa21 = data_in[ 79: 72] ^ w1[15: 8];
+     sa11 = data_in[ 87: 80] ^ w1[23:16];
+     sa01 = data_in[ 95: 88] ^ w1[31:24];
+     sa30 = data_in[103:096] ^ w0[ 7: 0];
+     sa20 = data_in[111:104] ^ w0[15: 8];
+     sa10 = data_in[119:112] ^ w0[23:16];
+     sa00 = data_in[127:120] ^ w0[31:24];
+              
+     // ShiftRows
+     sa00_sr = sa00_sub;
+     sa01_sr = sa01_sub;
+     sa02_sr = sa02_sub;
+     sa03_sr = sa03_sub;
+     sa10_sr = sa11_sub;
+     sa11_sr = sa12_sub;
+     sa12_sr = sa13_sub;
+     sa13_sr = sa10_sub;
+     sa20_sr = sa22_sub;
+     sa21_sr = sa23_sub;
+     sa22_sr = sa20_sub;
+     sa23_sr = sa21_sub;
+     sa30_sr = sa33_sub;
+     sa31_sr = sa30_sub;
+     sa32_sr = sa31_sub;
+     sa33_sr = sa32_sub;
+
+     // MixColumns
+     sa00_next = sa00_mc;
+     sa01_next = sa01_mc;
+     sa02_next = sa02_mc;
+     sa03_next = sa03_mc;
+     sa10_next = sa10_mc;
+     sa11_next = sa11_mc;
+     sa12_next = sa12_mc;
+     sa13_next = sa13_mc;
+     sa20_next = sa20_mc;
+     sa21_next = sa21_mc;
+     sa22_next = sa22_mc;
+     sa23_next = sa23_mc;
+     sa30_next = sa30_mc;
+     sa31_next = sa31_mc;
+     sa32_next = sa32_mc;
+     sa33_next = sa33_mc; 
+
+     data_out = sa00_next # sa10_next # sa20_next # sa30_next # sa01_next # sa11_next # sa21_next # sa31_next # sa02_next # sa12_next # sa22_next # sa32_next # sa03_next # sa13_next # sa23_next # sa33_next;
+
+  }
+}
+
+hardwired aes_round_key_first_ctl (aes_round_key_first) {run;}
+
+dp aes_round_cipher : aes_round_key_first
+dp aes_round_msgexp : aes_round_key_first
+
+
+dp message_expansion(in  init         : ns(1);
+	             in  load         : ns(1);
+	             in  message      : ns(256);
+	             out round_key    : ns(128);
+	             out start_cipher : ns(1))
+{
+
+ reg init_reg     : ns(1);
+ reg load_reg     : ns(1);
+ reg message_reg  : ns(512);
+ reg counter_reg  : ns(64);
+ reg counter_init : ns(64);
+ reg salt_reg     : ns(256);
+ reg cntr0        : ns(5);
+ reg cntr1        : ns(3);
+ reg cntr2        : ns(2);
+ reg nlw_msg      : ns(6);
+
+ sig salt          : ns(256);
+ sig counter       : ns(64);
+ sig round_key_sig : ns(128);
+ sig key           : ns(128);
+ sig aes_data_in   : ns(128);
+ sig aes_data_out  : ns(128);
+
+ use aes_round_msgexp(key, aes_data_in, aes_data_out);
+
+ sfg initialize{
+	 init_reg = init;
+	 load_reg = load;
+	 // To reduce the number of MUXes - BEGIN
+	 round_key_sig = message_reg[511:384];
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # message_reg[447:416] # message_reg[415:384] # message_reg[511:480];
+	 // To reduce the number of MUXes - END
+
+	 cntr0 = 0;
+	 cntr1 = 0;
+	 cntr2 = 0;
+	 nlw_msg     = 0;
+	 message_reg = 0;
+	 counter_reg = 0;
+	 salt_reg    = 0;
+	 counter_init = message;
+	 
+	 round_key = round_key_sig;
+	 start_cipher = 0;
+	 }
+
+ sfg idle{
+	 init_reg = init;
+	 load_reg = load;
+	 // To reduce the number of MUXes - BEGIN
+	 round_key_sig = message_reg[511:384];
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # message_reg[447:416] # message_reg[415:384] # message_reg[511:480];
+	 // To reduce the number of MUXes - END
+
+	 cntr0 = 0;
+	 cntr1 = 0;
+	 cntr2 = 0;
+	 nlw_msg     = 0;
+	 message_reg = 0;
+	 salt_reg    = 0;
+
+	 counter_reg = (counter_reg > counter_init) ? counter_init : counter_reg;
+	 
+	 round_key = round_key_sig;
+	 start_cipher = 0;
+	 }
+
+ sfg load_msg{
+	 init_reg    = init;
+	 load_reg    = load;
+	 salt        = 0x0;
+	 message_reg = message_reg[255:0] # message;
+	 nlw_msg     = nlw_msg + 1;
+	 salt_reg    = salt;
+
+	 // To reduce the number of MUXes - BEGIN
+	 round_key_sig = message_reg[511:384];
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # message_reg[447:416] # message_reg[415:384] # message_reg[511:480];
+	 // To reduce the number of MUXes - END
+
+	 cntr0 = 0;
+	 cntr1 = 0;
+	 cntr2 = 0;
+
+	 counter_reg = (counter_reg > counter_init) ? counter_init : (nlw_msg == 1) ? counter_reg + 512 : counter_reg;
+
+	 round_key = round_key_sig;
+	 start_cipher = 0;
+ }
+
+ sfg first{
+	 init_reg = init;
+	 load_reg = load;
+	 round_key_sig = message_reg[511:384];
+	 message_reg   = message_reg[383:0] # message_reg[511:384];
+
+	 // To reduce the number of MUXes - BEGIN
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # message_reg[447:416] # message_reg[415:384] # message_reg[511:480];
+	 // To reduce the number of MUXes - END
+	 cntr0 = cntr0 + 1;
+	 nlw_msg     = 0;
+	 counter_reg = (counter_reg > counter_init) ? counter_init : counter_reg;
+
+	 round_key = round_key_sig;
+	 start_cipher = 1;
+ }
+
+ sfg nonlinear{
+	 init_reg = init;
+	 load_reg = load;
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # 
+	 	       message_reg[447:416] # 
+		       message_reg[415:384] # 
+		       message_reg[511:480];
+	 message_reg = message_reg[383:0] # 
+	 	       round_key_sig;
+
+	 round_key_sig = (cntr0 == 4) ? 
+	 	       	 (aes_data_out[127:96] ^ counter_reg[31:0] ^ message_reg[127:96]) # 
+			 (aes_data_out[95:64] ^ ~counter_reg[63:32] ^ message_reg[95:64]) # 
+			 (aes_data_out[63:32] ^ message_reg[63:32]) # (aes_data_out[31:0] ^ message_reg[31:0]) :
+
+	 (cntr0 == 14) ? (aes_data_out[127:96] ^ message_reg[127:96]) # 
+	 	         (aes_data_out[95:64] ^ counter_reg[63:32] ^ message_reg[95:64]) # 
+			 (aes_data_out[63:32] ^ ~counter_reg[31:0] ^ message_reg[63:32]) # 
+			 (aes_data_out[31:0] ^ message_reg[31:0]) :
+
+	 (cntr0 == 21) ? (aes_data_out[127:96] ^ message_reg[127:96]) # 
+	 	         (aes_data_out[95:64] ^ message_reg[95:64]) # 
+			 (aes_data_out[63:32] ^ counter_reg[63:32] ^ message_reg[63:32]) # 
+			 (aes_data_out[31:0] ^ ~counter_reg[31:0] ^ message_reg[31:0]) :
+
+	 (cntr0 == 31) ? (aes_data_out[127:96] ^ counter_reg[31:0] ^ message_reg[127:96]) # 
+	 	       	 (aes_data_out[95:64] ^ message_reg[95:64]) # 
+			 (aes_data_out[63:32] ^ message_reg[63:32]) # 
+			 (aes_data_out[31:0] ^ ~counter_reg[63:32] ^ message_reg[31:0]) :
+
+	 		 (aes_data_out[127:96] ^ message_reg[127:96]) # 
+			 (aes_data_out[95:64] ^ message_reg[95:64]) # 
+			 (aes_data_out[63:32] ^ message_reg[63:32]) # 
+			 (aes_data_out[31:0] ^ message_reg[31:0]);
+
+	 cntr0 = cntr0 + 1;
+	 cntr1 = cntr1 + 1;
+	 cntr2 = (cntr0 == 5 & cntr1 == 1) ? cntr2 + 1 : cntr2;
+	 nlw_msg     = 0;
+	 counter_reg = (counter_reg > counter_init) ? counter_init : counter_reg;
+
+	 round_key = round_key_sig;
+	 start_cipher = 1;
+ }
+
+ sfg linear{
+	 init_reg = init;
+	 load_reg = load;
+	 round_key_sig = (message_reg[511:480] ^ message_reg[95:64]) # 
+	 	         (message_reg[479:448] ^ message_reg[63:32]) # 
+			 (message_reg[447:416] ^ message_reg[31:0]) # 
+			 (message_reg[511:480] ^ message_reg[95:64] ^ message_reg[415:384]);
+
+	 message_reg = message_reg[383:0] # round_key_sig;
+
+	 // To reduce the number of MUXes - BEGIN	 
+	 key = (cntr0[2:0] == 4 | cntr0[2:0] == 6) ? salt_reg[127:0] : salt_reg[255:128];
+	 aes_data_in = message_reg[479:448] # 
+	 	       message_reg[447:416] # 
+		       message_reg[415:384] # 
+		       message_reg[511:480];
+	 // To reduce the number of MUXes - END
+
+	 cntr0 = cntr0 + 1;
+	 cntr1 = cntr1 + 1;
+	 cntr2 = (cntr0 == 5 & cntr1 == 1) ? cntr2 + 1 : cntr2;
+	 nlw_msg     = 0;
+	 counter_reg = (counter_reg > counter_init) ? counter_init : counter_reg;
+
+	 round_key = round_key_sig;
+	 start_cipher = 1;
+ }
+
+}
+
+fsm message_expansion_ctl (message_expansion) 
+{
+ initial s0;
+ state   s1, s2, s3, s4;
+
+ @s0 if      (init_reg)                  then (initialize) -> s0;
+     else if (load_reg)                  then (load_msg)   -> s1;
+     else                                     (initialize) -> s0;
+
+ @s1 if      (init_reg)                  then (initialize) -> s0;
+     else if (load_reg & (nlw_msg < 2)) then  (load_msg)   -> s1;
+     else if (nlw_msg == 2)              then (first)      -> s2;
+     else                                     (idle)       -> s1;
+
+ @s2 if      (init_reg)                  then (initialize) -> s0;
+     else if (cntr0 <= 3)                then (first)      -> s2;
+     else                                     (nonlinear)  -> s3;
+
+ @s3 if      (init_reg)                  then (initialize) -> s0;
+     else if (load_reg & cntr2 == 2)     then (load_msg)   -> s1;
+     else if (cntr1 <= 3)                then (nonlinear)  -> s3;
+     else                                     (linear)     -> s4;
+
+ @s4 if      (init_reg)                  then (initialize) -> s0;
+     else if (load_reg & cntr2 == 2)     then (load_msg)   -> s1;
+     else if (cntr1 == 0)                then (nonlinear)  -> s3;
+     else                                     (linear)     -> s4;
+}
+
+
+dp shavite_cipher(in  start     : ns(1);
+	          in  data_in   : ns(256);
+	          in  round_key : ns(128);
+	          out hash      : ns(256);
+	          out done      : ns(1))
+{
+ reg key_reg : ns(128);  // to pipeline message_expansion and shavite_cipher
+ reg aes_reg : ns(128);
+ reg L       : ns(128);
+ reg R       : ns(128);
+ reg round_cntr : ns(4); // counts the number of rounds (12 in total)
+ reg step_cntr  : ns(2); // counts the number of steps in one round (3 in total)
+ sig key_i : ns(128);
+ sig aes_data_in, aes_data_out : ns(128);
+
+ use aes_round_cipher(key_i, aes_data_in, aes_data_out);
+
+ sfg run{
+	 L = (~start) ? data_in[255:128] : (step_cntr == 2) ? R                : L;
+	 R = (~start) ? data_in[127:  0] : (step_cntr == 2) ? aes_data_out ^ L : R;
+	 aes_reg = aes_data_out;
+	 step_cntr = ~start ? 0 : (step_cntr == 3) ? 1 : step_cntr + 1;
+
+	 key_reg = round_key;
+	 key_i = key_reg;
+
+	 aes_data_in = (step_cntr == 0 | step_cntr == 3) ? R : aes_reg;
+
+	 round_cntr = ~start ? 0 : (step_cntr == 3) ? round_cntr + 1 : round_cntr;
+
+//	 $display($cycle, " AESDI ", aes_data_in);
+//	 $display($cycle, " AESKEY ", key_i);
+//	 $display($cycle, " AESOUT ", aes_data_out);
+//	 $display($cycle, " AESOUT^L ", aes_data_out ^ L);
+//	 $display($cycle, " LR ", L, " ", R);
+	 hash = done ? L # R : 0;
+	 done = (round_cntr == 11 & step_cntr == 3) ? 1 : 0;
+//	 $display($cycle, " ctr ", start, " ", round_cntr , " ", step_cntr);
+	}
+}
+
+hardwired shavite_cipher_ctl (shavite_cipher) {run;}
+
+
+dp shavite_top(in  init     : ns(1);
+	       in  load     : ns(1);
+	       in  fetch    : ns(1);
+	       out ack      : ns(1);
+	       in  idata    : ns(256);
+	       out odata    : ns(256))
+{
+ reg chain            : ns(256);
+ reg nlw_msg          : ns(6); // number of loaded message words
+ reg nfw              : ns(5); // number of fetched words
+ reg done_reg         : ns(1);
+ reg init_reg         : ns(1);
+ reg load_reg         : ns(1);
+ reg fetch_reg        : ns(1);
+ reg start_0          : ns(1);
+ reg ack_reg          : ns(1);
+
+ sig round_key        : ns(128);
+ sig start_cipher     : ns(1);
+ sig start_cipher_out : ns(1);
+ sig done             : ns(1);
+ sig hash             : ns(256);
+ sig chain_sig        : ns(256);
+
+ sig T0 : ns(128);
+ sig T1 : ns(128);
+
+ use message_expansion(init, load, idata, round_key, start_cipher_out);
+ use shavite_cipher(start_cipher, chain_sig, round_key, hash, done);
+
+ always {
+ $display($cycle, "shavite init ", init, " load ", load, " idata ", idata);
+//   $display($cycle, " nlw_msg ", nlw_msg);
+//   $display($cycle, " nfw ", nfw);
+ }
+
+ sfg initialize{
+	 init_reg  = init;
+	 load_reg  = load;
+	 fetch_reg = fetch;
+
+	 nlw_msg   = 0;
+	 nfw       = 0;
+	 done_reg  = 0;
+	 start_0   = 0;
+	 
+	 T0 = 0x3EECF551BF10819BE6DC8559F3E23FD5;
+	 T1 = 0x431AEC7379E3F73198325F05A92A31F1;
+
+	 chain     = T0 # T1;
+	 chain_sig = chain;
+	 ack       = 0;
+	 odata     = 0;
+	 
+	 start_cipher = 0;
+ }
+	
+ sfg idle{
+	 init_reg  = init;
+	 load_reg  = load;
+	 fetch_reg = fetch;
+
+	 nlw_msg   = 0;
+	 nfw       = 0;
+	 done_reg  = 0;
+	 start_0   = 0;
+	 
+	 chain_sig = chain;
+	 start_cipher = 0;	 
+
+	 ack   = 0;
+	 odata = 0;
+ }
+
+ sfg load_msg{
+	 init_reg  = init;
+	 load_reg  = load;
+	 fetch_reg = fetch;
+
+	 nlw_msg = nlw_msg + 1;
+	 nfw = 0;
+	 chain_sig = chain;
+	 chain = done ? hash ^ chain : chain;
+	 start_cipher = 0;
+	 start_0      = 0;
+
+	 ack = 1;
+	 ack_reg = 1;
+	 odata = 0;
+ }
+
+ sfg run{
+	 init_reg  = init;
+	 load_reg  = load;
+	 fetch_reg = fetch;
+
+	 nlw_msg   = 0;
+	 nfw = 0;
+
+	 start_0 = start_cipher_out;
+	 start_cipher = start_0;
+	 chain_sig = chain;
+	 chain = done ? hash ^ chain : chain;
+//	 $display($cycle, " chain ", chain);
+	 done_reg = done;
+
+	 ack_reg = 0;
+	 ack = ack_reg;
+	 odata = 0;
+ }	 
+
+ sfg write{
+	 init_reg  = init;
+	 load_reg  = load;
+	 fetch_reg = fetch;
+
+	 start_cipher = 0;
+	 chain_sig = chain;
+	 done_reg = done;
+	 start_0  = 0;
+	 
+	 nfw = nfw + 1;
+	 nlw_msg   = 0;
+//	 chain = chain[239:0] # chain[255:240];
+
+	 ack = 1;
+	 odata = chain[255:0];
+ }	 
+}
+
+fsm shavite_top_ctl (shavite_top)
+{
+initial s0;
+state s1, s2, s3, s4;
+
+@s0 if      (init_reg)                  then (initialize) -> s1;
+    else                                     (initialize) -> s0;
+
+@s1 if      (init_reg)                  then (initialize) -> s1;
+    else if (load_reg)                  then (load_msg)   -> s2;
+    else    (initialize)                                  -> s1;
+
+@s2 if      (init_reg)                  then (initialize) -> s1;
+    else if (load_reg & (nlw_msg < 2))  then (load_msg)   -> s2;
+    else                                     (run)        -> s3;
+
+@s3 if      (init_reg)                  then (initialize) -> s1;
+    else if (done_reg & fetch_reg)      then (write)      -> s4;
+    else if (~done_reg)                 then (run)        -> s3;
+    else if (load_reg)                  then (load_msg)   -> s2;
+    else                                     (idle)       -> s4;
+
+@s4 if      (init_reg)                  then (initialize) -> s1;
+    else if (fetch_reg & (nfw < 1))     then (write)      -> s4;
+    else if (load_reg)                  then (load_msg)   -> s2;
+    else                                     (idle)       -> s4;
+}
+
+// TEST BENCH for shavite_top
+// ///////////////////////////////////////////
+// ////////////// TEST BENCH /////////////////
+// ///////////////////////////////////////////
+dp test (out init  : ns(1);
+	 out load  : ns(1);
+	 out fetch : ns(1);
+	 in  ack   : ns(1);
+	 out idata : ns(256);
+	 in  odata : ns(256))
+{
+ reg message : ns(512);
+ reg counter : ns(64);
+ reg nlw     : ns(6); // number of loaded words
+ reg nfw     : ns(5); // number of fetched words
+ reg wait    : ns(10); 
+
+ sfg init{
+	 init  = 1;
+	 load  = 0;
+	 fetch = 0;
+	 idata = 0;
+	 
+	 message = 0x6748C87BFDE9F9F66C04E1C3C7523AAE8685D47EE360E20E0080150B00000000000000000000000000000000000000000000000000D000000000000001000000;
+
+//                   0x44434241484746454C4B4A49504F4E4D545352515857565500805A5900000000000000000000000000000000000000000000000000D000000000000001000000; // This is padded "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	 counter = 0x00000000000000D0;  // 208 bits = 26 * 8 bits
+ }
+
+ sfg load_msg{
+	 init  = 0;
+	 load  = 1;
+	 fetch = 0;
+	 idata = ack ? message[511:256] : 0;
+	 message = ack ? message[255:0] # message[511:256] : message;
+
+	 nlw = ack ? nlw + 1 : nlw;
+	 nfw = 0;
+	 wait = 0;
+ }
+
+ sfg load_cnt{
+	 init  = 0;
+	 load  = 1;
+	 fetch = 0;
+	 idata = counter[15:0];
+
+	 nlw = 0;
+	 nfw = 0;
+	 wait = 0;
+ }
+
+ sfg idle{
+	 init  = 0;
+	 load  = 0;
+	 fetch = 0;
+	 idata = 0;
+
+	 nlw = 0;
+	 nfw = 0;
+	 wait = 0;
+ }
+
+ sfg wait{
+	 init  = 0;
+	 load  = 0;
+	 fetch = 0;
+	 idata = 0;
+	 
+	 wait = wait + 1;
+	 nlw = 0;
+	 nfw = 0;
+ }
+
+ sfg fetch{
+	 init  = 0;
+	 load  = 0;
+	 fetch = 1;
+	 idata = 0;
+	 $display($cycle, " ", ack, " ", odata);
+	 nfw = ack ? nfw + 1 : nfw;
+	 nlw = 0;
+	 wait = 0;
+ }
+}
+
+fsm test_ctl (test) 
+{
+ initial s0;
+ state s1, s2, s3, s4, s5, s6;
+
+ @s0 (idle)                                   -> s1;
+ @s1 (init)                                   -> s2;
+ @s2 (load_cnt)                               -> s3;
+ @s3 if (nlw < 2)    then (load_msg)          -> s3;
+	             else (wait)              -> s4;
+ @s4 if (wait == 2)  then (fetch)             -> s5;
+	             else (wait)              -> s4;
+ @s5 if (nfw < 1)    then (fetch)             -> s5;
+	             else (idle)              -> s1;
+}  
+	 
+
+dp main
+{
+ sig init, load, fetch, ack : ns(1);
+ sig idata, odata : ns(256);
+
+ use test(init, load, fetch, ack, idata, odata);
+ use shavite_top(init, load, fetch, ack, idata, odata);
+
+ sfg run{
+ 	 $display($cycle, " ", load, " ", idata);
+        }
+}
+
+hardwired main_ctl (main) {run;}
+
+system S {main;}
+
+// ///////////////////////////////////////////
+// ////////////// TEST BENCH /////////////////
+// ///////////////////////////////////////////

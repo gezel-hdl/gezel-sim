@@ -1,0 +1,119 @@
+//-- Example for AVR simulator --//
+
+ipblock myavr {
+  iptype "atmega128system";
+  ipparm "exec=samplecode.srec";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock myavr_datain(in int0 : ns(8); in int1 : ns(8); in cca : ns(8); in t1 : ns(8)) {
+  iptype "atmega128_radioifc";
+  ipparm "core=myavr";
+  ipparm "port=avr_radioifc";
+}
+
+ipblock myavr_signal(out data : ns(8)) {
+  iptype "atmega128systemsource";
+  ipparm "core=myavr";
+  ipparm "port=PB";
+}
+
+dp avr_testbench( out int0 : ns(8); 
+				  out int1 : ns(8); 
+				  out capture : ns(8); 
+				  out t1 : ns(8); 
+				  in portval : ns(8)) {
+
+  reg datain1	:ns(8);
+/*  reg datain2	: ns(8);
+  reg val		: ns(8);
+  reg count		: ns(8);*/
+  sig intsig	: ns(8);
+  
+  always {  datain1 = portval;  
+			//int1 = 1;
+			capture = 0;
+			t1 = 0;
+  }
+	
+  sfg idle 		{ int0 = 1;  int1 = 1; } // $display(" idle");} //$display(" idle");}  
+  sfg setint	{ int0 = 0; int1 = 1;}
+  sfg setint1	{ int0 = 1; int1 = 0; }
+  sfg showval	{ $display("show value ", datain1); int0 = 1; int1 = 1;}
+  sfg states13	{ } //$display("State 13"); }
+  sfg states14	{ } //$display("State 14"); }
+  sfg yep	{ $display("where am i?"); }
+  sfg nope	{ $display("I am lost"); }
+  
+//sfg showbyte	{ $display("       ", val); int0 = 1;}
+}
+
+fsm testbench(avr_testbench) {
+  initial s0;
+  state s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14;
+  state s31, s32, s33, s34, s35;
+  state s15, s16, s17, s18, s19, s20;
+  state s21, s22, s23, s24, s25, s26, s27, s28, s29;
+    state s41, s42, s43, s44, s45;
+  
+  @s0 (idle)-> s1;
+  @s1 (idle)-> s2;
+  @s2 (idle)-> s3;
+  @s3 (idle)-> s4;
+  @s4 (idle)-> s5;
+  @s5 (idle)-> s6;
+  @s6 (idle)-> s7;
+  @s7 (idle)-> s8;
+  @s8 (idle)-> s9;
+  @s9 (idle)-> s10;
+  @s10 (idle)-> s11;
+  @s11 (idle)-> s31;
+  @s31 (idle)-> s32;
+  @s32 (idle)-> s33;
+  @s33 (idle)-> s34;
+  @s34 (idle)-> s35;
+  @s35 (idle)-> s12;
+  
+  @s12 (setint)-> s13;
+  @s13 if(datain1) then (showval, states13)->s14;
+	      else (states13, setint)->s13;
+  @s14 (idle, states14)->s15;
+
+  @s15 (idle)-> s16;
+  @s16 (idle)-> s17;
+  @s17 (idle)-> s18;
+  @s18 (idle)-> s19;
+  @s19 (idle)-> s20;
+  @s20 (idle)-> s21;  
+  @s21 (idle)-> s22;
+  @s22 (idle)-> s23;
+  @s23 (idle)-> s24;
+  @s24 (idle)-> s25;
+  @s25 (idle)-> s26;
+  @s26 (idle)-> s41;
+  @s41 (idle)-> s42;
+  @s42 (idle)-> s43;
+  @s43 (idle)-> s44;
+  @s44 (idle)-> s45;
+  @s45 (idle)-> s27;
+
+  @s27 (setint1)-> s28;
+  @s28 if(datain1) then (showval, states13)->s29;
+	      else (states13, setint1)->s28;
+  @s29 (idle, states14)->s0;
+		
+}
+
+dp sys {
+  sig  int0, int1, capture, t1, portval : ns(8); 
+
+  use myavr;
+  use myavr_datain(int0, int1, capture, t1);
+  use avr_testbench(int0, int1, capture, t1, portval);
+  use myavr_signal(portval);
+}
+
+system S {
+  sys;
+}

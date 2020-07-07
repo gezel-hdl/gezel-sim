@@ -1,0 +1,79 @@
+//-- Example for AVR simulator --//
+
+ipblock myavr {
+  iptype "atmega128system";
+  ipparm "exec=avr_check.srec";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock myavr_datain(out data : ns(8)) {
+  iptype "atmega128systemsource";
+  ipparm "core=myavr";
+  ipparm "port=PB";
+}
+
+ipblock myavr_dataout(in data : ns(8)) {
+  iptype "atmega128systemsink";
+  ipparm "core=myavr";
+  ipparm "port=PA";
+}
+
+ipblock myavr_signal(out data : ns(8)) {
+  iptype "atmega128systemsource";
+  ipparm "core=myavr";
+  ipparm "port=PC";
+}
+
+dp avr_testbench( in   insig : ns(8);
+		  in   din : ns(8); 
+		  out dout : ns(8)) {
+
+  reg ctlreg		: ns(8);
+  reg dinreg		: ns(8);
+  reg doutreg		: ns(8);
+  sig ctlsig		: ns(8);
+
+  always { ctlsig = insig; //ctlreg = insig;
+           dout   = doutreg;
+         }
+	
+  sfg idle 	{ ctlreg = ctlsig; }  
+  sfg start 	{ dinreg = din;  $display("Input = ", din);  } 
+  sfg incr	{ dinreg = dinreg + 1;  } 
+  sfg write	{ doutreg = dinreg; $display("Output = ", dinreg);  } 
+  sfg wait	{ ctlreg = 0; }
+}
+
+fsm testbench(avr_testbench) {
+  initial s0;
+  state s1, s2, s3, s4, s5, s6, s7, s8, s9;
+  
+  @s0 (idle)-> s1;
+  @s1 if(ctlreg) then (wait)->s2;
+		 else (idle)->s1;
+  @s2 (start)->s3;
+//   @s6 (wait)->s7;
+//   @s7 (wait)->s8;
+//   @s8 (wait)->s9;
+//   @s9 (wait)->s3;
+  
+  @s3 (incr)->s4;
+  @s4 (write)->s5;
+  @s5 (idle)->s1;
+}
+
+dp sys {
+  sig insig, din, dout : ns(8); 
+
+  use myavr;
+  use myavr_datain(din);
+  use myavr_dataout(dout);
+  use myavr_signal(insig);
+  use avr_testbench(insig, din, dout);
+
+}
+
+system S {
+  sys;
+}

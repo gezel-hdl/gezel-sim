@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003-2005 P. Schaumont, D. Ching 
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -16,8 +16,8 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: i8051system.h 52 2006-05-28 19:33:23Z schaum $
 //--------------------------------------------------------------
+
 
 #ifndef I8051SYSTEM_H
 #define I8051SYSTEM_H

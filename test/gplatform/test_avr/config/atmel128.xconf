@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration title="Common MICA2 features" abstract="yes"
+    xmlns="http://www.cshcn.umd.edu/research/atemu/">
+    <!-- Include the AVR Atmel128L processor description -->
+    <message text="CPU: AVR Atmega128L" />
+    <processor id="atmega128">
+        <!-- Offset into SRAM by IN and OUT opcodes -->
+        <param name="IO_OFFSET" value="0x000020" />
+        <!-- End of IO Register Space -->
+        <param name="IO_LAST" value="0x0000FF" />
+        <!-- Size of SRAM (4KB + 256 Bytes) -->
+        <param name="SRAM_BYTES" value="0x1100" />
+        <!-- Size of Flash in Words (64 kWord) -->
+        <param name="FLASH_WORDS" value="0x10000" />
+        <!-- Length of Program counter (16 bits) -->
+        <param name="PC_BITS" value="16" />
+        <!-- AND mask for bounding of flash reads -->
+        <param name="PC_MASK" value="0x0FFFF" />
+        <!-- SRAM location to reserve for processor time freeze -->
+        <param name="DBG_TIME" value="0xFA" />
+
+        <!-- Default processor frequency -->
+        <param name="oscillator" value="4MHz" />
+    </processor>
+
+    <!-- List of registers -->
+    <register id="UCSR1C" value="0x9d" />
+    <register id="UDR1" value="0x9c" />
+    <register id="UCSR1A" value="0x9b" />
+    <register id="UCSR1B" value="0x9a" />
+    <register id="UBRR1L" value="0x99" />
+    <register id="UBRR1H" value="0x98" />
+    <register id="UCSR0C" value="0x95" />
+    <register id="UBRR0H" value="0x90" />
+    <register id="TCCR3C" value="0x8c" />
+    <register id="TCCR3A" value="0x8b" />
+    <register id="TCCR3B" value="0x8a" />
+    <register id="TCNT3H" value="0x89" />
+    <register id="TCNT3L" value="0x88" />
+    <register id="OCR3AH" value="0x87" />
+    <register id="OCR3AL" value="0x86" />
+    <register id="OCR3BH" value="0x85" />
+    <register id="OCR3BL" value="0x84" />
+    <register id="OCR3CH" value="0x83" />
+    <register id="OCR3CL" value="0x82" />
+    <register id="ICR3H" value="0x81" />
+    <register id="ICR3L" value="0x80" />
+    <register id="ETIMSK" value="0x7d" />
+    <register id="ETIFR" value="0x7c" />
+    <register id="TCCR1C" value="0x7a" />
+    <register id="OCR1CH" value="0x79" />
+    <register id="OCR1CL" value="0x78" />
+    <register id="TWCR" value="0x74" />
+    <register id="TEDR" value="0x73" />
+    <register id="TWAR" value="0x72" />
+    <register id="TWSR" value="0x71" />
+    <register id="TWBR" value="0x70" />
+    <register id="OSCCAL" value="0x6f" />
+    <register id="XMCRA" value="0x6d" />
+    <register id="XMCRB" value="0x6c" />
+    <register id="EICRA" value="0x6a" />
+    <register id="SPMCSR" value="0x68" />
+    <register id="PORTG" value="0x65" />
+    <register id="DDRG" value="0x64" />
+    <register id="PING" value="0x63" />
+    <register id="PORTF" value="0x62" />
+    <register id="DDRF" value="0x61" />
+    <register id="SREG" value="0x5f" />
+    <register id="SPH" value="0x5e" />
+    <register id="SPL" value="0x5d" />
+    <register id="XDIV" value="0x5c" />
+    <register id="RAMPZ" value="0x5b" />
+    <register id="EICRB" value="0x5a" />
+    <register id="EIMSK" value="0x59" />
+    <register id="EIFR" value="0x58" />
+    <register id="TIMSK" value="0x57" />
+    <register id="TIFR" value="0x56" />
+    <register id="MCUCR" value="0x55" />
+    <register id="MCUCSR" value="0x54" />
+    <register id="TCCR0" value="0x53" />
+    <register id="TCNT0" value="0x52" />
+    <register id="OCR0" value="0x51" />
+    <register id="ASSR" value="0x50" />
+    <register id="TCCR1A" value="0x4f" />
+    <register id="TCCR1B" value="0x4e" />
+    <register id="TCNT1H" value="0x4d" />
+    <register id="TCNT1L" value="0x4c" />
+    <register id="OCR1AH" value="0x4b" />
+    <register id="OCR1AL" value="0x4a" />
+    <register id="OCR1BH" value="0x49" />
+    <register id="OCR1BL" value="0x48" />
+    <register id="ICR1H" value="0x47" />
+    <register id="ICR1L" value="0x46" />
+    <register id="TCCR2" value="0x45" />
+    <register id="TCNT2" value="0x44" />
+    <register id="OCR2" value="0x43" />
+    <register id="OCDR" value="0x42" />
+    <register id="WDTCR" value="0x41" />
+    <register id="SFIOR" value="0x40" />
+    <register id="EEARH" value="0x3f" />
+    <register id="EEARL" value="0x3e" />
+    <register id="EEDR" value="0x3d" />
+    <register id="EECR" value="0x3c" />
+    <register id="PORTA" value="0x3b" />
+    <register id="DDRA" value="0x3a" />
+    <register id="PINA" value="0x39" />
+    <register id="PORTB" value="0x38" />
+    <register id="DDRB" value="0x37" />
+    <register id="PINB" value="0x36" />
+    <register id="PORTC" value="0x35" />
+    <register id="DDRC" value="0x34" />
+    <register id="PINC" value="0x33" />
+    <register id="PORTD" value="0x32" />
+    <register id="DDRD" value="0x31" />
+    <register id="PIND" value="0x30" />
+    <register id="SPDR" value="0x2f" />
+    <register id="SPSR" value="0x2e" />
+    <register id="SPCR" value="0x2d" />
+    <register id="UDR0" value="0x2c" />
+    <register id="UCSR0A" value="0x2b" />
+    <register id="UCSR0B" value="0x2a" />
+    <register id="UBRR0L" value="0x29" />
+    <register id="ACSR" value="0x28" />
+    <register id="ADMUX" value="0x27" />
+    <register id="ADCSRA" value="0x26" />
+    <register id="ADCH" value="0x25" />
+    <register id="ADCL" value="0x24" />
+    <register id="PORTE" value="0x23" />
+    <register id="DDRE" value="0x22" />
+    <register id="PINE" value="0x21" />
+    <register id="PINF" value="0x20" />
+    <register id="DBG_MODEB0" value="0xFC" />
+    <register id="DBG_MODEB1" value="0xFD" />
+    <register id="DBG_MODEB2" value="0xFE" />
+    <register id="DBG_MODEB3" value="0xFF" />
+    <register id="DBG_DATA" value="0xFB" />
+    <register id="DBG_TIME" value="0xFA" />
+
+
+    <!-- The Serial Peripheral Interface -->
+    <device id="libspi" module="libspi">
+        <!-- Connect the normal registers -->
+        <register name="control" ref="SPCR" />
+        <register name="status" ref="SPSR" />
+        <register name="data" ref="SPDR" />
+        <register name="ddrb" ref="DDRB" />
+		<!-- previous ddrb: bits="0x0F" -->
+        <register name="portb" ref="PORTB" bits="0x0F" />
+        <register name="pinb" ref="PINB" bits="0x0F" />
+        <!-- Connect the standard interrupts -->
+        <interrupt name="libspi" value="18" />
+    </device>
+
+
+    
+    <!-- The Synchronous 16-bit timer -->
+    <device id="timer1" module="libtimer16">
+        <!-- Connect the normal registers -->
+        <register name="ControlA" ref="TCCR1A" />
+        <register name="ControlB" ref="TCCR1B" />
+        <register name="ControlC" ref="TCCR1C" />
+        <register name="CompareA" ref="OCR1AL" />
+        <register name="HighByte" ref="OCR1AH" />
+        <register name="CompareB" ref="OCR1BL" />
+        <register name="HighByte" ref="OCR1BH" />
+        <register name="CompareC" ref="OCR1CL" />
+        <register name="HighByte" ref="OCR1CH" />
+        <register name="Count" ref="TCNT1L" />
+        <register name="HighByte" ref="TCNT1H" />
+        <register name="Capture" ref="ICR1L" />
+        <!-- register name="HighByte" ref="ICR1H" /-->
+        <register name="IntMask" ref="TIMSK" bits="0x3C" />
+        <register name="IntFlag" ref="TIFR" bits="0x3C" />
+        <register name="IntEMask" ref="ETIMSK" bits="0x01" />
+        <register name="IntEFlag" ref="ETIFR" bits="0x01" />
+        <!-- Connect the standard interrupts -->
+        <interrupt name="overflow" value="15" />
+        <interrupt name="compareA" value="13" />
+        <interrupt name="compareB" value="14" />
+        <interrupt name="compareC" value="25" />
+        <interrupt name="input" value="12" />
+    </device>
+
+</configuration>

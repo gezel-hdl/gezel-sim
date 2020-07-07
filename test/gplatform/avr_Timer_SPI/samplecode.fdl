@@ -1,0 +1,103 @@
+//-- Example for AVR simulator --//
+
+ipblock myavr {
+  iptype "atmega128system";
+  ipparm "exec=samplecode.srec";
+  ipparm "verbose=1";
+  ipparm "period=1";
+}
+
+ipblock myavr_datain(in int0 : ns(8); in int1 : ns(8); in cca : ns(8); in t1 : ns(8)) {
+  iptype "atmega128_radioifc";
+  ipparm "core=myavr";
+  ipparm "port=avr_radioifc";
+}
+
+ipblock myavr_signal(out data : ns(8)) {
+  iptype "atmega128systemsource";
+  ipparm "core=myavr";
+  ipparm "port=PB";
+}
+
+ipblock myavr_signal2(out data : ns(8)) {
+  iptype "atmega128systemsource";
+  ipparm "core=myavr";
+  ipparm "port=PA";
+}
+
+dp avr_testbench( out int0 : ns(8); 
+				  out int1 : ns(8); 
+				  out capture : ns(8); 
+				  out t1 : ns(8); 
+				  in portval : ns(8);
+				  in portval2 : ns(8)) {
+
+  sig datain1	:ns(8);
+/*  reg datain2	: ns(8);
+  reg val		: ns(8);
+  reg count		: ns(8);*/
+  sig intsig	: ns(8);
+  sig datain2	:ns(8);
+  
+  always {  datain1 = portval;  
+				datain2 = portval2;
+			int0 = 1;
+			int1 = 1;
+			//capture = 0;
+			//t1 = 0;
+  }
+	
+  sfg idle 			{ t1 = 0; capture = 0; } // $display(" idle");} //$display(" idle");}  
+  sfg showval		{ $display("show value ", datain1); }
+  sfg settimer 	{ t1 = 1; }
+  sfg resettimer	{ t1 = 0; }
+  sfg setcapture	{ capture = 1; }
+  sfg resetcapture { capture = 0; }
+  sfg state1		{ $display("state 1 : ", datain1); }
+  
+  sfg state9		{ } //$display("state 9 : ", datain2); }
+  sfg state12		{ $display("state 12 :positive :", datain2); }
+  sfg state12else	{ } //$display("state 12 : else : ", datain2); }
+}
+
+fsm testbench(avr_testbench) {
+  initial s0;
+  state s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14;
+  state s31, s32, s33, s34, s35;
+  
+  @s0 (idle)-> s1;
+  @s1 if(datain1 != 0) then (settimer, resetcapture, state1)-> s2;
+		else (idle)-> s1;
+  @s2 (resettimer, resetcapture)-> s3;
+  @s3 (settimer, resetcapture)-> s4;
+  @s4 (resettimer, resetcapture)-> s5;
+  @s5 (settimer, resetcapture)-> s6;
+  @s6 (resettimer, resetcapture)-> s7;
+  @s7 (settimer, resetcapture)-> s8;
+  @s8 (resettimer, resetcapture)-> s9;
+  @s9 (settimer, resetcapture, state9)-> s10;
+  @s10 (resettimer, resetcapture)-> s11;
+  @s11 (settimer, resetcapture)-> s31;
+  @s31 (resettimer, resetcapture)-> s32;
+  @s32 (settimer, resetcapture)-> s33;
+  @s33 (resettimer, resetcapture)-> s34;
+  @s34 (settimer, resetcapture)-> s35;
+  @s35 (resettimer, setcapture)-> s12;
+  @s12 if(datain2 != 0) then (resettimer, resetcapture, state12) ->s0;
+		 else (resettimer, setcapture, state12else)-> s12;
+  		
+}
+
+dp sys {
+  sig  int0, int1, capture, t1, portval, portval2 : ns(8); 
+
+  use myavr;
+  use myavr_datain(int0, int1, capture, t1);
+  use avr_testbench(int0, int1, capture, t1, portval, portval2);
+  use myavr_signal(portval);
+  use myavr_signal2(portval2);
+}
+
+system S {
+  sys;
+}

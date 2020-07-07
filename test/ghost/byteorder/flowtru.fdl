@@ -1,0 +1,81 @@
+ipblock nalla( out rx_data             : ns(256); 
+               out rx_data_valid       : ns(1);   
+               out rx_data_empty       : ns(1);
+               in  rx_data_read        : ns(1);
+               in  tx_data             : ns(256);
+               in  tx_data_valid       : ns(1);
+               out tx_data_almost_full : ns(1)) {
+  iptype "nalla_spl";
+  ipparm "socket=0";
+}
+
+dp flowtru( in   rx_data             : ns(256); 
+            in   rx_data_valid       : ns(1);   
+            in   rx_data_empty       : ns(1);
+            out  rx_data_read        : ns(1);
+
+            out  tx_data             : ns(256);
+            out  tx_data_valid       : ns(1);
+            in   tx_data_almost_full : ns(1)) {
+
+  reg r_tx_data        : ns(256);
+  reg r_rx_data_read   : ns(1);
+  reg rr_rx_data_read  : ns(1);
+
+  sig sum1 : ns(32);
+  sig sum2 : ns(32);
+  sig sum3 : ns(32);
+  sig sum4 : ns(32);
+  sig sum5 : ns(32);
+  sig sum6 : ns(32);
+  sig sum7 : ns(32);
+  sig sum8 : ns(32);
+
+  always {
+    $display(rx_data_read, " ", 
+             rx_data_empty, " ", 
+             tx_data_valid, " ", 
+             tx_data_almost_full, " ",
+             tx_data);
+    r_rx_data_read  = ~rx_data_empty & ~tx_data_almost_full & ~r_rx_data_read;
+    rr_rx_data_read = r_rx_data_read;
+    tx_data_valid   = rr_rx_data_read;
+    rx_data_read    = r_rx_data_read;
+
+    sum1            = rx_data[ 31:  0] + 1;
+    sum2            = rx_data[ 63: 32] + 2;
+    sum3            = rx_data[ 95: 64] + 3;
+    sum4            = rx_data[127: 96] + 4;
+    sum5            = rx_data[159:128] + 5;
+    sum6            = rx_data[191:160] + 6;
+    sum7            = rx_data[223:192] + 7;
+    sum8            = rx_data[255:224] + 8;
+    r_tx_data       = sum8 # sum7 # sum6 # sum5 # sum4 # sum3 # sum2 # sum1;
+    tx_data         = r_tx_data;
+  }
+
+}
+
+dp top {
+   sig  rx_data             : ns(256); 
+   sig  rx_data_valid       : ns(1);   
+   sig  rx_data_empty       : ns(1);
+   sig  rx_data_read        : ns(1);
+
+   sig  tx_data             : ns(256);
+   sig  tx_data_valid       : ns(1);
+   sig  tx_data_almost_full : ns(1);
+
+   use nalla  (rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+               tx_data, tx_data_valid, tx_data_almost_full); 
+   use flowtru(rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+               tx_data, tx_data_valid, tx_data_almost_full); 
+
+   always {}
+
+}
+
+system S {
+  top;
+}
+

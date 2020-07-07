@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003-2005 P. Schaumont, D. Ching 
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -16,7 +16,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: platform.cxx 151 2009-09-29 14:25:18Z schaum $
 //--------------------------------------------------------------
 
 #include "platform.h"
@@ -30,12 +29,14 @@
 #include "ipconfig.h"    // static_ipblockcreate, dynamic_ipblockcreate
 
 #ifndef _MSC_VER
-#include "armsystem.h"   // ipblocks for arm
+#include "armsystem.h"     // ipblocks for arm
 #include "xilinxitf.h"
 #endif
 
-#include "i8051system.h" // ipblocks for 8051
-#include "picoblaze.h"  // ipblocks for picoblaze
+#include "i8051system.h"   // ipblocks for 8051
+#include "picoblaze.h"     // ipblocks for picoblaze
+#include "gezelavr.h"      // gezel interface to simulavr
+// #include "atmega128system.h" // ipblocks for atmega128 
 
 #include <stdlib.h>
 
@@ -84,6 +85,18 @@ aipblock * gplatform_ipblockcreate(char *instname, char *tname) {
   // --- Eric's new picoblaze
   CREATE(picoblaze);
 
+  CREATE(atm128core);
+  CREATE(atm128sourcepin);
+  CREATE(atm128sinkpin);
+  CREATE(atm128adpin);   // simulate A/D input as 10-bit digital data
+
+  // Sachin's new atmega128
+  //  CREATE(atmega128system);
+  //  CREATE(atmega128systemsource);
+  //  CREATE(atmega128systemsink);
+  //  CREATE(atmega128master_spi);
+  //  CREATE(atmega128_radioifc);
+  
   r = dynamic_ipblockcreate(instname, tname);
   if (r) return r;
 
@@ -104,6 +117,7 @@ static void usage(char *fname) {
 #endif
   cerr <<      "  i8051system  Intel 8051 ISS + memory\n";
   cerr <<      "  picosystem   Xilinx KCPSM3 Picoblaze ISS + memory\n";
+  cerr <<      "  gezelavr     Atmega 128kb ISS + memory\n";  
 }
 
 /* ---------------------------------------------------- */

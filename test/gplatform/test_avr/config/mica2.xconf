@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration title="Common MICA2 features"
+        xmlns="http://www.cshcn.umd.edu/research/atemu/">
+    <!-- Include the AVR Atmel128L processor description -->
+    <include href="atmel128">
+        <!-- Frequency of main system clock -->
+        <param name="oscillator" value="7.3728MHz" />
+        <!-- Frequency of TIMER0's asynchronous clock -->
+        <param name="asynccrystal" value="32kHz" />
+    </include>
+    
+        <!-- The Radio -->
+    <device id="libspiifc" module="libspiifc">
+        <!-- Connect with the other devices -->
+        <!-- NOTE: Consider this interface deprecated as it may change once
+          - XCONF is completed -->
+        <connect name="libspi" ref="libspi" />
+	 </device>
+
+    <!-- The Radio interrupt & timer capture Interface -->
+    <device id="libradio" module="libradio">
+        <!-- Connect the normal registers -->
+        <register name="control" ref="EICRA" />
+        <!-- register name="status" ref="SREG" -->
+        <register name="mask" ref="EIMSK" bits="0x03"/>
+        <register name="data" ref="EIFR" bits="0x01"/>
+        <register name="ddrd" ref="DDRD" />
+        <register name="portd" ref="PORTD" bits="0x53" />
+        <register name="pind" ref="PIND" bits="0x53" />
+        <!-- Connect the standard interrupts -->
+        <interrupt name="extint0" value="2" />
+		  <interrupt name="extint1" value="3" />
+
+			<connect name="libtimer16" ref="timer1" />
+    </device>
+
+    <!-- device id="libradio" module="libradio">
+	 </device -->
+
+</configuration>

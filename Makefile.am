@@ -1,3 +1,5 @@
+
+
 if BUILDSTANDALONE
   STANDALONEDIR = standalone
 else
@@ -16,13 +18,19 @@ else
   JAVADIR =
 endif
 
+#if BUILDGPLATFORM
+#  GPLATFORMDIR = gplatform gplatform/devices
+#else
+#  GPLATFORMDIR =
+#endif
+
 if BUILDGPLATFORM
   GPLATFORMDIR = gplatform
 else
   GPLATFORMDIR =
 endif
 
-SUBDIRS = m4 gezel ipblock $(SYSTEMCCOSIMDIR) $(JAVADIR) $(GPLATFORMDIR) $(STANDALONEDIR)
+SUBDIRS = m4 gezel ipblock ghost $(SYSTEMCCOSIMDIR) $(JAVADIR) $(GPLATFORMDIR) $(STANDALONEDIR) 
 
 # find test -name '*' -type f | grep -v '.svn'
 

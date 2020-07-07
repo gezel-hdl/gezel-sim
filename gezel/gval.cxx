@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003-2005 P. Schaumont, D. Ching 
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -16,8 +16,8 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id$
 //--------------------------------------------------------------
+
 
 #include "gval.h"
 #include "rtopt.h"
@@ -201,6 +201,18 @@ void gval::valuecopy(const gval &  v) { // like 'operator =' without rescale()
   
 unsigned long gval::toulong() const {
   return mpz_get_ui(value);
+}
+
+void gval::assignuarray(unsigned *v, unsigned s) {
+  // COPY in LITTLE ENDIAN format
+  mpz_import(value, s, -1, sizeof(v[0]), 0, 0, v);
+  rescale();
+}
+
+void gval::touarray(unsigned *v, unsigned *s) {
+  // COPY IN LITTLE ENDIAN format
+  mpz_export(v, (size_t *) s, -1, sizeof(v[0]), 0, 0, value);
+  rescale();
 }
 
 signed long gval::toslong() const {

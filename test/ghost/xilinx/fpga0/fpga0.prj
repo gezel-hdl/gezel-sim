@@ -1,0 +1,6 @@
+vhdl work "./src/std_logic_arithext.vhd"
+vhdl work "./src/flowtru.vhd"
+vhdl work "./src/fpga0.vhd"
+
+
+

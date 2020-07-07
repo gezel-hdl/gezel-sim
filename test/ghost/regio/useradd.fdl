@@ -1,0 +1,45 @@
+ipblock nalla(out wdata : ns(16);   // write-data
+              out addr  : ns(13);   // address
+              out rden  : ns(1);    // read data enable
+              out wren  : ns(1);    // write data enable
+              in  rdata : ns(16);   // read-data
+              in  rdy   : ns(1))  {   // read signal
+  iptype "nalla_regio";
+  ipparm "socket=0";
+  ipparm "interface=0";
+}
+
+dp nalla_add(in  wdata : ns(16);   // write-data
+             in  addr  : ns(13);   // address
+             in  rden  : ns(1);    // read data enable
+             in  wren  : ns(1);    // write data enable
+             out rdata : ns(16);   // read-data
+             out rdy   : ns(1))  {   // read signal
+  reg rrden : ns(1);
+  reg rwren : ns(1);
+  reg arg1, arg2 : ns(16);
+  always {
+    rrden = rden;
+    rwren = wren;
+    arg1  = (wren & (addr == (ns(13)) 0x0)) ? wdata : arg1;
+    arg2  = (wren & (addr == (ns(13)) 0x4)) ? wdata : arg2;
+    rdata = arg1 + arg2;
+    rdy   = (rrden | rwren);
+  }
+}
+
+dp top {
+   sig  wdata : ns(16);   
+   sig  addr  : ns(13);   
+   sig  rden  : ns( 1);    
+   sig  wren  : ns( 1);    
+   sig  rdata : ns(16);  
+   sig  rdy   : ns( 1);
+   use nalla(wdata, addr, rden, wren, rdata, rdy);
+   use nalla_add(wdata, addr, rden, wren, rdata, rdy);
+}
+
+system S {
+  top;
+}
+

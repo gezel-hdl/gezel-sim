@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2003-2005 P. Schaumont, D. Ching 
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -16,7 +16,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA
 //
-// $Id: gval.h 113 2009-06-19 16:11:11Z schaum $
 //--------------------------------------------------------------
 
 #ifndef GVAL_H
@@ -57,6 +56,8 @@ class gval {
     signed long toslong() const;
   void          assignulong (unsigned long);
   void          assignslong (signed long);
+  void          assignuarray(unsigned *, unsigned size);
+  void          touarray    (unsigned *, unsigned *size);
   
   unsigned getwordlength() const;
   void     setwordlength(unsigned _wordlength);

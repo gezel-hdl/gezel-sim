@@ -1,0 +1,63 @@
+ipblock nalla( out rx_data             : ns(256); 
+               out rx_data_valid       : ns(1);   
+               out rx_data_empty       : ns(1);
+               in  rx_data_read        : ns(1);
+               in  tx_data             : ns(256);
+               in  tx_data_valid       : ns(1);
+               out tx_data_almost_full : ns(1)) {
+  iptype "nalla_spl";
+  ipparm "socket=0";
+}
+
+dp flowtru( in   rx_data             : ns(256); 
+            in   rx_data_valid       : ns(1);   
+            in   rx_data_empty       : ns(1);
+            out  rx_data_read        : ns(1);
+
+            out  tx_data             : ns(256);
+            out  tx_data_valid       : ns(1);
+            in   tx_data_almost_full : ns(1)) {
+
+  reg r_tx_data        : ns(256);
+  reg r_rx_data_read   : ns(1);
+  reg rr_rx_data_read  : ns(1);
+
+  always {
+    $display(rx_data_read, " ", 
+             rx_data_empty, " ", 
+             tx_data_valid, " ", 
+             tx_data_almost_full, " ",
+             rx_data);
+    r_rx_data_read  = ~rx_data_empty & ~tx_data_almost_full & ~r_rx_data_read;
+    rr_rx_data_read = r_rx_data_read;
+    tx_data_valid   = rr_rx_data_read;
+    rx_data_read    = r_rx_data_read;
+    r_tx_data       = rx_data;
+    tx_data         = r_tx_data;
+  }
+
+}
+
+dp top {
+   sig  rx_data             : ns(256); 
+   sig  rx_data_valid       : ns(1);   
+   sig  rx_data_empty       : ns(1);
+   sig  rx_data_read        : ns(1);
+
+   sig  tx_data             : ns(256);
+   sig  tx_data_valid       : ns(1);
+   sig  tx_data_almost_full : ns(1);
+
+   use nalla  (rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+               tx_data, tx_data_valid, tx_data_almost_full); 
+   use flowtru(rx_data, rx_data_valid, rx_data_empty, rx_data_read,
+               tx_data, tx_data_valid, tx_data_almost_full); 
+
+   always {}
+
+}
+
+system S {
+  top;
+}
+

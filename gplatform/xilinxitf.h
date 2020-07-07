@@ -1,5 +1,5 @@
 //--------------------------------------------------------------
-// Copyright (C) 2007 P. Schaumont
+// Copyright (C) 2003-2010 P. Schaumont 
 //                                                                             
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public License
@@ -17,6 +17,7 @@
 // USA
 //
 //--------------------------------------------------------------
+
 #ifndef XILINXITF
 #define XILINXITF
 

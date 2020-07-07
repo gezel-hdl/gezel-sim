@@ -26,6 +26,9 @@ all:
 	cd ./xilinxipifmem_gcd;   make ; cd .
 	cd ./xilinxipifreg_sub64; make ; cd .
 	cd ./cordicfsl;		  make ; cd .
+	cd ./test_avr;		  make ; cd .
+	cd ./avr_Interrupt;	  make ; cd .
+	cd ./avr_Timer_SPI;	  make ; cd .
 
 sim:
 	cd ./arm2arm;             make sim; cd .
@@ -53,6 +56,9 @@ sim:
 	cd ./xilinxipifmem_gcd;   make sim; cd .
 	cd ./xilinxipifreg_sub64; make sim; cd .
 	cd ./cordicfsl;		  make sim; cd .
+	cd ./test_avr;		  make sim; cd .
+	cd ./avr_Interrupt;	  make sim; cd .
+	cd ./avr_Timer_SPI;	  make sim; cd .
 
 clean:
 	cd ./arm2arm;             make clean; cd .
@@ -81,4 +87,7 @@ clean:
 	cd ./xilinxipifmem_gcd;   make clean; cd .
 	cd ./xilinxipifreg_sub64; make clean; cd .
 	cd ./cordicfsl;		  make clean; cd .
+	cd ./test_avr;		  make clean; cd .
+	cd ./avr_Interrupt;	  make clean; cd .
+	cd ./avr_Timer_SPI;	  make clean; cd .
 
